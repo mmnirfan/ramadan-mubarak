@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_AE',
-    url: 'https://your-domain.vercel.app',
+    url: 'https://ramadan-mubarak-delta.vercel.app',
     siteName: 'RamadanHub',
     title: 'RamadanHub | Iftar & Suhoor Registration',
     description: 'Join your colleagues for blessed meals during the holy month of Ramadan 2026.',
