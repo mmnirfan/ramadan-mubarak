@@ -12,10 +12,12 @@ import {
   Send,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
+  Info,
 } from 'lucide-react'
 import { DatePicker } from './ui'
 import { RegistrationFormData, initialFormData } from '@/lib/types'
-import { submitRegistration, validateFormData } from '@/lib/api'
+import { submitRegistration, validateFormData, RegistrationResponse } from '@/lib/api'
 import { DEPARTMENTS } from '@/lib/utils'
 
 export function RegistrationForm() {
@@ -23,17 +25,25 @@ export function RegistrationForm() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const [submitResult, setSubmitResult] = useState<{
+    savedDates?: string[]
+    duplicateDates?: string[]
+    partialDuplicate?: boolean
+    isDuplicate?: boolean
+    mealType?: string
+  } | null>(null)
 
-  const handleInputChange = (field: keyof RegistrationFormData, value: string | Date | null) => {
+  const handleInputChange = (field: keyof RegistrationFormData, value: string | Date[] | null) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     setSubmitError('')
+    setSubmitResult(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitError('')
+    setSubmitResult(null)
 
-    // Validate form
     const validationError = validateFormData(formData)
     if (validationError) {
       setSubmitError(validationError)
@@ -43,16 +53,42 @@ export function RegistrationForm() {
     setIsSubmitting(true)
 
     try {
-      const result = await submitRegistration(formData)
+      const result: RegistrationResponse = await submitRegistration(formData)
 
-      if (result.success) {
+      if (result.success && !result.partialDuplicate) {
+        // Full success
+        setSubmitResult({
+          savedDates: result.savedDates,
+        })
         setIsSubmitted(true)
 
-        // Reset form after showing success
         setTimeout(() => {
           setIsSubmitted(false)
           setFormData(initialFormData)
-        }, 4000)
+          setSubmitResult(null)
+        }, 5000)
+      } else if (result.success && result.partialDuplicate) {
+        // Partial success - some dates saved, some were duplicates
+        setSubmitResult({
+          savedDates: result.savedDates,
+          duplicateDates: result.duplicateDates,
+          partialDuplicate: true,
+          mealType: result.mealType,
+        })
+        setIsSubmitted(true)
+
+        setTimeout(() => {
+          setIsSubmitted(false)
+          setFormData(initialFormData)
+          setSubmitResult(null)
+        }, 6000)
+      } else if (result.isDuplicate) {
+        // All dates were duplicates
+        setSubmitResult({
+          isDuplicate: true,
+          duplicateDates: result.duplicateDates,
+          mealType: result.mealType,
+        })
       } else {
         setSubmitError(result.error || 'Failed to submit. Please try again.')
       }
@@ -68,7 +104,7 @@ export function RegistrationForm() {
     formData.email &&
     formData.department &&
     formData.mealType &&
-    formData.date
+    formData.dates.length > 0
 
   return (
     <section className="relative z-10 px-6 py-16">
@@ -86,7 +122,7 @@ export function RegistrationForm() {
               Register for Meals
             </h2>
             <p className="text-slate-400 font-body">
-              Fill in your details to join the blessed gatherings
+              Fill in your details and select multiple dates at once
             </p>
           </div>
 
@@ -98,12 +134,43 @@ export function RegistrationForm() {
               <h3 className="font-display text-2xl font-bold text-white mb-2">
                 Registration Successful!
               </h3>
-              <p className="text-slate-400">
+              <p className="text-slate-400 mb-4">
                 Jazak Allah Khair. You&apos;ll receive a confirmation email shortly.
               </p>
-              <p className="text-amber-400/70 text-sm mt-4">
-                Your registration has been saved to our records.
-              </p>
+              
+              {/* Show saved dates */}
+              {submitResult?.savedDates && submitResult.savedDates.length > 0 && (
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mt-4 text-left max-w-md mx-auto">
+                  <p className="text-emerald-300 font-medium mb-2 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Registered for {submitResult.savedDates.length} date(s):
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {submitResult.savedDates.map((date, i) => (
+                      <span key={i} className="text-emerald-200 text-sm bg-emerald-500/20 px-2 py-1 rounded">
+                        {date}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Show duplicate dates warning if partial */}
+              {submitResult?.partialDuplicate && submitResult?.duplicateDates && (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mt-4 text-left max-w-md mx-auto">
+                  <p className="text-amber-300 font-medium mb-2 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    Already registered for {submitResult.duplicateDates.length} date(s):
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {submitResult.duplicateDates.map((date, i) => (
+                      <span key={i} className="text-amber-200 text-sm bg-amber-500/20 px-2 py-1 rounded">
+                        {date}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-8">
@@ -258,16 +325,25 @@ export function RegistrationForm() {
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
+                {/* Multi-Date Picker */}
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Info className="w-4 h-4 text-amber-400/70" />
+                    <span className="text-amber-400/70 text-xs">
+                      You can select multiple dates for the same meal type
+                    </span>
+                  </div>
                   <DatePicker
-                    label="Select Date *"
-                    value={formData.date}
-                    onChange={(date) => handleInputChange('date', date)}
+                    label="Select Dates *"
+                    values={formData.dates}
+                    onChange={(dates) => handleInputChange('dates', dates)}
                   />
+                </div>
 
+                <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-amber-200/80 text-sm font-medium mb-2">
-                      Number of Guests
+                      Number of Guests (per day)
                     </label>
                     <div className="relative">
                       <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400/50" />
@@ -284,24 +360,49 @@ export function RegistrationForm() {
                       </select>
                     </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-amber-200/80 text-sm font-medium mb-2">
-                    Dietary Requirements / Notes
-                  </label>
-                  <textarea
-                    value={formData.dietaryNotes}
-                    onChange={(e) => handleInputChange('dietaryNotes', e.target.value)}
-                    placeholder="Any allergies, dietary restrictions, or special requests..."
-                    rows={3}
-                    className="input-field resize-none"
-                  />
+                  <div>
+                    <label className="block text-amber-200/80 text-sm font-medium mb-2">
+                      Dietary Requirements
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.dietaryNotes}
+                      onChange={(e) => handleInputChange('dietaryNotes', e.target.value)}
+                      placeholder="Allergies, restrictions..."
+                      className="input-field"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Error Message */}
-              {submitError && (
+              {/* All Dates Duplicate Warning */}
+              {submitResult?.isDuplicate && (
+                <div className="flex items-start gap-3 text-amber-300 bg-amber-500/10 border border-amber-500/40 rounded-xl p-5 animate-fade-in">
+                  <AlertTriangle className="w-6 h-6 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-amber-200 mb-1">
+                      Already Registered!
+                    </p>
+                    <p className="text-amber-300/90 text-sm mb-2">
+                      You have already registered for <strong>{submitResult.mealType}</strong> on all selected dates:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {submitResult.duplicateDates?.map((date, i) => (
+                        <span key={i} className="text-amber-200 text-sm bg-amber-500/20 px-2 py-1 rounded">
+                          {date}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-amber-400/70 text-xs mt-3">
+                      Please select different dates or contact HR to modify your registration.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* General Error Message */}
+              {submitError && !submitResult?.isDuplicate && (
                 <div className="flex items-center gap-2 text-red-400 bg-red-500/10 border border-red-500/30 rounded-xl p-4">
                   <AlertCircle className="w-5 h-5 flex-shrink-0" />
                   <span className="text-sm">{submitError}</span>
@@ -323,7 +424,9 @@ export function RegistrationForm() {
                   ) : (
                     <>
                       <Send className="w-5 h-5" />
-                      <span>Register for Meal</span>
+                      <span>
+                        Register for {formData.dates.length || 0} Date{formData.dates.length !== 1 ? 's' : ''}
+                      </span>
                     </>
                   )}
                 </button>

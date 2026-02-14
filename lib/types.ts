@@ -1,5 +1,5 @@
 /**
- * Form data types for registration
+ * Form data types for registration (supports multiple dates)
  */
 export interface RegistrationFormData {
   fullName: string
@@ -8,7 +8,7 @@ export interface RegistrationFormData {
   department: string
   employeeId: string
   mealType: 'iftar' | 'suhoor' | ''
-  date: Date | null
+  dates: Date[]  // Changed from single date to array
   guestCount: string
   dietaryNotes: string
 }
@@ -23,7 +23,7 @@ export const initialFormData: RegistrationFormData = {
   department: '',
   employeeId: '',
   mealType: '',
-  date: null,
+  dates: [],  // Empty array for multiple dates
   guestCount: '1',
   dietaryNotes: '',
 }
@@ -55,6 +55,18 @@ export interface ApiResponse {
   message?: string
   error?: string
   data?: Record<string, unknown>
+}
+
+/**
+ * Extended API response with multiple dates support
+ */
+export interface RegistrationResponse extends ApiResponse {
+  isDuplicate?: boolean
+  partialDuplicate?: boolean
+  duplicateType?: 'email' | 'phone'
+  mealType?: string
+  savedDates?: string[]
+  duplicateDates?: string[]
 }
 
 /**
