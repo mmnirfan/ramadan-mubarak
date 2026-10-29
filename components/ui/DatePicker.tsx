@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Calendar, X } from 'lucide-react'
-import { formatDate, isRamadanDate, getDaysInMonth, getFirstDayOfMonth } from '@/lib/utils'
+import { Calendar, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { isRamadanDate, getDaysInMonth, getFirstDayOfMonth, RAMADAN_START } from '@/lib/utils'
+import { useLanguage } from '@/lib/i18n'
 
 interface DatePickerProps {
   values: Date[]
@@ -10,16 +11,12 @@ interface DatePickerProps {
   label: string
 }
 
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
-]
-
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-
 export function DatePicker({ values, onChange, label }: DatePickerProps) {
+  const { t, formatDate, formatMonth } = useLanguage()
   const [isOpen, setIsOpen] = useState(false)
-  const [currentMonth, setCurrentMonth] = useState(new Date(2026, 1, 1))
+  const [currentMonth, setCurrentMonth] = useState(
+    new Date(RAMADAN_START.getFullYear(), RAMADAN_START.getMonth(), 1)
+  )
 
   const daysInMonth = getDaysInMonth(currentMonth.getFullYear(), currentMonth.getMonth())
   const firstDayOfMonth = getFirstDayOfMonth(currentMonth.getFullYear(), currentMonth.getMonth())
@@ -30,21 +27,21 @@ export function DatePicker({ values, onChange, label }: DatePickerProps) {
   }
 
   const isDateSelected = (day: number): boolean => {
-    return values.some(d => 
-      d.getDate() === day && 
-      d.getMonth() === currentMonth.getMonth() && 
+    return values.some(d =>
+      d.getDate() === day &&
+      d.getMonth() === currentMonth.getMonth() &&
       d.getFullYear() === currentMonth.getFullYear()
     )
   }
 
   const toggleDate = (day: number) => {
     const selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
-    
+
     if (isDateSelected(day)) {
       // Remove date
-      onChange(values.filter(d => 
-        !(d.getDate() === day && 
-          d.getMonth() === currentMonth.getMonth() && 
+      onChange(values.filter(d =>
+        !(d.getDate() === day &&
+          d.getMonth() === currentMonth.getMonth() &&
           d.getFullYear() === currentMonth.getFullYear())
       ))
     } else {
@@ -70,7 +67,7 @@ export function DatePicker({ values, onChange, label }: DatePickerProps) {
       <label className="block text-amber-200/80 text-sm font-medium mb-2">
         {label}
       </label>
-      
+
       {/* Selected Dates Display */}
       <div
         onClick={() => setIsOpen(!isOpen)}
@@ -79,13 +76,13 @@ export function DatePicker({ values, onChange, label }: DatePickerProps) {
         {values.length === 0 ? (
           <div className="flex items-center gap-3 text-slate-400">
             <Calendar className="w-5 h-5 text-amber-400" />
-            <span>Click to select dates (multiple allowed)</span>
+            <span>{t.datePicker.placeholder}</span>
           </div>
         ) : (
           <div className="flex items-center gap-2 flex-wrap">
             <Calendar className="w-5 h-5 text-amber-400 flex-shrink-0" />
             <span className="text-amber-300 text-sm font-medium">
-              {values.length} date{values.length > 1 ? 's' : ''} selected
+              {t.datePicker.selected(values.length)}
             </span>
           </div>
         )}
@@ -94,14 +91,15 @@ export function DatePicker({ values, onChange, label }: DatePickerProps) {
       {/* Selected Dates Tags */}
       {values.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-3">
-          {values.map((date, index) => (
+          {values.map((date) => (
             <div
-              key={index}
+              key={date.getTime()}
               className="inline-flex items-center gap-2 bg-amber-500/20 border border-amber-500/40 rounded-lg px-3 py-1.5 text-sm"
             >
               <span className="text-amber-200">{formatDate(date)}</span>
               <button
                 type="button"
+                aria-label={t.datePicker.removeDate}
                 onClick={(e) => {
                   e.stopPropagation()
                   removeDate(date)
@@ -122,24 +120,26 @@ export function DatePicker({ values, onChange, label }: DatePickerProps) {
             <button
               type="button"
               onClick={prevMonth}
+              aria-label={t.datePicker.previousMonth}
               className="p-2 hover:bg-amber-500/20 rounded-lg transition-colors text-amber-300"
             >
-              ←
+              <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
             </button>
             <span className="text-amber-100 font-semibold">
-              {MONTH_NAMES[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+              {formatMonth(currentMonth)}
             </span>
             <button
               type="button"
               onClick={nextMonth}
+              aria-label={t.datePicker.nextMonth}
               className="p-2 hover:bg-amber-500/20 rounded-lg transition-colors text-amber-300"
             >
-              →
+              <ChevronRight className="w-4 h-4 rtl:rotate-180" />
             </button>
           </div>
 
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {DAY_NAMES.map((day) => (
+            {t.datePicker.weekdays.map((day) => (
               <div
                 key={day}
                 className="text-center text-xs text-amber-400/60 font-medium py-1"
@@ -177,7 +177,7 @@ export function DatePicker({ values, onChange, label }: DatePickerProps) {
                 >
                   {day}
                   {isSelected && (
-                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-slate-900"></span>
+                    <span className="absolute -top-1 -end-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-slate-900"></span>
                   )}
                 </button>
               )
@@ -187,14 +187,14 @@ export function DatePicker({ values, onChange, label }: DatePickerProps) {
           <div className="mt-3 pt-3 border-t border-amber-500/20 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs text-amber-300/60">
               <div className="w-3 h-3 rounded bg-amber-500/20 border border-amber-500/30"></div>
-              <span>Ramadan 2026</span>
+              <span>{t.datePicker.legend}</span>
             </div>
             <button
               type="button"
               onClick={() => setIsOpen(false)}
               className="text-xs text-amber-400 hover:text-amber-300 font-medium"
             >
-              Done
+              {t.datePicker.done}
             </button>
           </div>
         </div>

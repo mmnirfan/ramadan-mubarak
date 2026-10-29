@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { LanguageProvider } from "@/lib/i18n";
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -9,9 +10,9 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://ramadan-mubarak-delta.vercel.app'),
-  title: 'RamadanHub | Iftar & Suhoor Registration',
-  description: 'Join your colleagues for blessed meals during the holy month of Ramadan 2026. Register for office Iftar and Suhoor gatherings in Abu Dhabi, UAE.',
-  keywords: ['Ramadan', 'Iftar', 'Suhoor', 'Registration', 'Abu Dhabi', 'UAE', 'Office', 'Fasting'],
+  title:'RamadanHub | Iftar & Sehri Registration',
+  description: 'Join your colleagues for blessed meals during the holy month of Ramadan 2027. Register for office Iftar and Sehri gatherings in Bengaluru, India.',
+  keywords: ['Ramadan', 'Iftar', 'Suhoor', 'Registration', 'Bengaluru', 'Bangalore', 'India', 'Sehri', 'Office', 'Fasting'],
   authors: [{ name: 'Your Company Name' }],
   creator: 'Your Company Name',
   publisher: 'Your Company Name',
@@ -23,24 +24,24 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: 'website',
-    locale: 'en_AE',
+    locale: 'en_IN',
     url: 'https://ramadan-mubarak-delta.vercel.app',
     siteName: 'RamadanHub',
-    title: 'RamadanHub | Iftar & Suhoor Registration',
-    description: 'Join your colleagues for blessed meals during the holy month of Ramadan 2026.',
+    title: 'RamadanHub | Iftar & Sehri Registration',
+    description: 'Join your colleagues for blessed meals during the holy month of Ramadan 2027.',
     images: [
       {
         url: '/images/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'RamadanHub - Iftar & Suhoor Registration',
+        alt: 'RamadanHub - Iftar & Sehri Registration',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'RamadanHub | Iftar & Suhoor Registration',
-    description: 'Join your colleagues for blessed meals during Ramadan 2026.',
+    title: 'RamadanHub | Iftar & Sehri Registration',
+    description: 'Join your colleagues for blessed meals during Ramadan 2027.',
     images: ['/images/og-image.png'],
   },
   // themeColor: '#0f172a',
@@ -62,7 +63,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className="bg-slate-950 text-white">
-        {children}
+        <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
   )

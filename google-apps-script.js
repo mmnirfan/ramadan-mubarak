@@ -35,11 +35,12 @@ const SPREADSHEET_ID = '15eLrUfUYoP2F_EB72ddowXhdrrkOUgnowOx5d9fQNUk';
 const SHEET_NAME = 'Sheet1';
 const SEND_EMAIL_CONFIRMATION = false;
 const ADMIN_EMAIL = 'hr@company.com';
-const TIMEZONE = 'Asia/Dubai';
+const TIMEZONE = 'Asia/Kolkata';
 
-// Ramadan 2026 (inclusive, yyyy-MM-dd)
-const RAMADAN_START = '2026-02-17';
-const RAMADAN_END = '2026-03-18';
+// Ramadan 2027 / 1448 AH - expected in India (subject to moon sighting)
+// (inclusive, yyyy-MM-dd; the end allows a 30th day)
+const RAMADAN_START = '2027-02-09';
+const RAMADAN_END = '2027-03-10';
 const MAX_GUESTS = 5;
 
 const HEADERS = [
@@ -313,12 +314,12 @@ function validateData(data) {
 }
 
 /**
- * Keeps the last 9 digits so +971 50 123 4567, 0501234567
- * and 971501234567 all compare equal.
+ * Keeps the last 10 digits (Indian mobile numbers) so +91 98765 43210,
+ * 09876543210 and 919876543210 all compare equal.
  */
 function normalizePhone(phone) {
   const digits = String(phone || '').replace(/\D/g, '');
-  return digits.length > 9 ? digits.slice(-9) : digits;
+  return digits.length > 10 ? digits.slice(-10) : digits;
 }
 
 function normalizeName(name) {
@@ -336,11 +337,11 @@ function toDateKey(value) {
 }
 
 /**
- * yyyy-MM-dd → "Fri, 20 Feb 2026" (no timezone shifting)
+ * yyyy-MM-dd → "Wed, 10 Feb 2027" (no timezone shifting)
  */
 function formatDateKey(dateKey) {
   const parts = dateKey.split('-').map(Number);
-  // Noon UTC stays on the same calendar day in Asia/Dubai
+  // Noon UTC stays on the same calendar day in Asia/Kolkata
   const date = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12));
   return Utilities.formatDate(date, TIMEZONE, 'EEE, d MMM yyyy');
 }
@@ -364,7 +365,7 @@ function capitalizeFirst(str) {
 
 function sendConfirmationEmail(data, formattedDates) {
   const mealEmoji = data.mealType === 'iftar' ? '🌙' : '⭐';
-  const mealTime = data.mealType === 'iftar' ? '~6:18 PM' : '~4:30 AM';
+  const mealTime = data.mealType === 'iftar' ? '~6:28 PM' : '~4:30 AM';
 
   const subject = `${mealEmoji} RamadanHub: Your ${capitalizeFirst(data.mealType)} Registration is Confirmed`;
 
@@ -406,10 +407,10 @@ function testSubmission() {
         fullName: 'Test User',
         employeeId: 'EMP-TEST',
         email: 'test@example.com',
-        phone: '+971 50 123 4567',
+        phone: '+91 98765 43210',
         department: 'IT',
         mealType: 'iftar',
-        dates: ['2026-02-20', '2026-02-21'],
+        dates: ['2027-02-10', '2027-02-11'],
         guestCount: '2',
         dietaryNotes: 'Vegetarian'
       })
@@ -422,6 +423,6 @@ function testSubmission() {
 }
 
 function testLookup() {
-  const result = doGet({ parameter: { phone: '0501234567' } });
+  const result = doGet({ parameter: { phone: '09876543210' } });
   console.log('Lookup result:', result.getContent());
 }

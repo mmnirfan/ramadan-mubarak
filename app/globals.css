@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Amiri:wght@400;700&family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -225,4 +225,20 @@ select {
   background-repeat: no-repeat;
   background-position: right 1rem center;
   background-size: 1.25rem;
+}
+/* Urdu (RTL) - Latin display fonts have no Urdu glyphs; Nastaliq needs extra line height */
+html[lang="ur"] body,
+html[lang="ur"] .font-body,
+html[lang="ur"] .font-display {
+  font-family: 'Noto Nastaliq Urdu', 'Amiri', serif;
+  line-height: 2;
+}
+
+/* Tailwind text sizes set tight line heights; Nastaliq ascenders/descenders need more room */
+html[lang="ur"] :is(.text-xs, .text-sm, .text-base, .text-lg, .text-xl, .text-2xl) {
+  line-height: 2;
+}
+
+[dir="rtl"] select {
+  background-position: left 1rem center;
 }
