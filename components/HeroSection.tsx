@@ -42,7 +42,7 @@ export function HeroSection() {
                   <p className="text-xs text-slate-400 ltr:uppercase ltr:tracking-wider mb-1">
                     {t.prayers[name]}
                   </p>
-                  <p className="font-body text-amber-100 font-semibold">
+                  <p className="font-body text-amber-100 font-semibold" dir="auto">
                     {formatTime(hours, minutes)}
                   </p>
                 </div>

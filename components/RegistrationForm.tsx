@@ -233,16 +233,15 @@ export function RegistrationForm() {
                     <label className="block text-amber-200/80 text-sm font-medium mb-2">
                       {t.form.email}
                     </label>
-                    <div className="relative">
+                    <div className="relative" dir="ltr">
                       <Mail className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400/50" />
                       <input
                         type="email"
                         required
-                        dir="ltr"
                         value={formData.email}
                         onChange={(e) => handleInputChange('email', e.target.value)}
                         placeholder={t.form.emailPlaceholder}
-                        className="input-field ps-12 rtl:text-right"
+                        className="input-field ps-12"
                       />
                     </div>
                   </div>
@@ -251,16 +250,15 @@ export function RegistrationForm() {
                     <label className="block text-amber-200/80 text-sm font-medium mb-2">
                       {t.form.phone}
                     </label>
-                    <div className="relative">
+                    <div className="relative" dir="ltr">
                       <Phone className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400/50" />
                       <input
                         type="tel"
                         required
-                        dir="ltr"
                         value={formData.phone}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
                         placeholder={t.form.phonePlaceholder}
-                        className="input-field ps-12 rtl:text-right"
+                        className="input-field ps-12"
                       />
                     </div>
                   </div>
@@ -321,7 +319,7 @@ export function RegistrationForm() {
                         <p className="text-sm text-slate-400 mt-1">
                           {t.form.iftarDescription}
                         </p>
-                        <p className="text-xs text-amber-400 mt-2">
+                        <p className="text-xs text-amber-400 mt-2" dir="auto">
                           ~{formatTime(...MEAL_TIMES.iftar)}
                         </p>
                       </div>
@@ -342,7 +340,7 @@ export function RegistrationForm() {
                           {t.meals.suhoor}
                         </p>
                         <p className="text-sm text-slate-400 mt-1">{t.form.suhoorDescription}</p>
-                        <p className="text-xs text-amber-400 mt-2">
+                        <p className="text-xs text-amber-400 mt-2" dir="auto">
                           ~{formatTime(...MEAL_TIMES.suhoor)}
                         </p>
                       </div>
@@ -352,7 +350,7 @@ export function RegistrationForm() {
 
                 {/* Multi-Date Picker */}
                 <div>
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-2">
                     <Info className="w-4 h-4 text-amber-400/70" />
                     <span className="text-amber-400/70 text-xs">
                       {t.form.multiDateHint}
