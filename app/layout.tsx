@@ -1,7 +1,14 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#f59e0b',
+}
+
 export const metadata: Metadata = {
+  metadataBase: new URL('https://ramadan-mubarak-delta.vercel.app'),
   title: 'RamadanHub | Iftar & Suhoor Registration',
   description: 'Join your colleagues for blessed meals during the holy month of Ramadan 2026. Register for office Iftar and Suhoor gatherings in Abu Dhabi, UAE.',
   keywords: ['Ramadan', 'Iftar', 'Suhoor', 'Registration', 'Abu Dhabi', 'UAE', 'Office', 'Fasting'],
@@ -10,7 +17,6 @@ export const metadata: Metadata = {
   publisher: 'Your Company Name',
   robots: 'index, follow',
   manifest: "/manifest.json",
-  themeColor: "#f59e0b",
   icons: {
     icon: "/favicon.ico",
     apple: "/icons/apple-touch-icon.png"
@@ -37,7 +43,6 @@ export const metadata: Metadata = {
     description: 'Join your colleagues for blessed meals during Ramadan 2026.',
     images: ['/images/og-image.png'],
   },
-  viewport: 'width=device-width, initial-scale=1',
   // themeColor: '#0f172a',
   // icons: {
   //   icon: '/favicon.ico',

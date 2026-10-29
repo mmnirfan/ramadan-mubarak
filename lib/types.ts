@@ -63,10 +63,26 @@ export interface ApiResponse {
 export interface RegistrationResponse extends ApiResponse {
   isDuplicate?: boolean
   partialDuplicate?: boolean
-  duplicateType?: 'email' | 'phone'
+  duplicateType?: 'name' | 'phone'
   mealType?: string
-  savedDates?: string[]
-  duplicateDates?: string[]
+  savedDates?: string[]      // yyyy-MM-dd
+  duplicateDates?: string[]  // yyyy-MM-dd
+}
+
+/**
+ * An existing registration returned by the lookup endpoint
+ */
+export interface ExistingRegistration {
+  mealType: string
+  date: string  // yyyy-MM-dd
+}
+
+/**
+ * Lookup response (search by phone or name)
+ */
+export interface LookupResponse extends ApiResponse {
+  count?: number
+  registrations?: ExistingRegistration[]
 }
 
 /**

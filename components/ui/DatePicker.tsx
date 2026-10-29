@@ -163,6 +163,7 @@ export function DatePicker({ values, onChange, label }: DatePickerProps) {
                   key={day}
                   type="button"
                   onClick={() => toggleDate(day)}
+                  disabled={!isRamadan && !isSelected}
                   className={`
                     p-2 rounded-lg text-sm font-medium transition-all duration-200 relative
                     ${
@@ -170,7 +171,7 @@ export function DatePicker({ values, onChange, label }: DatePickerProps) {
                         ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-slate-900 shadow-lg shadow-amber-500/30'
                         : isRamadan
                         ? 'bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 border border-amber-500/30'
-                        : 'text-slate-300 hover:bg-slate-700/50'
+                        : 'text-slate-600 cursor-not-allowed'
                     }
                   `}
                 >
