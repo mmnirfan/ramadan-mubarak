@@ -67,7 +67,25 @@ export interface RegistrationResponse extends ApiResponse {
   mealType?: string
   savedDates?: string[]      // yyyy-MM-dd
   duplicateDates?: string[]  // yyyy-MM-dd
+  errorCode?: FormErrorCode  // set for client-side failures, translated in the UI
 }
+
+/**
+ * Error codes shown to the user (messages live in the translations)
+ */
+export type FormErrorCode =
+  | 'fullName'
+  | 'email'
+  | 'emailInvalid'
+  | 'phone'
+  | 'department'
+  | 'mealType'
+  | 'dates'
+  | 'datesOutOfRange'
+  | 'network'
+  | 'unconfirmed'
+  | 'generic'
+  | 'unexpected'
 
 /**
  * An existing registration returned by the lookup endpoint

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { LanguageProvider } from "@/lib/i18n";
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -9,8 +10,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://ramadan-mubarak-delta.vercel.app'),
-  title: 'RamadanHub | Iftar & Suhoor Registration',
-  description: 'Join your colleagues for blessed meals during the holy month of Ramadan 2026. Register for office Iftar and Suhoor gatherings in Abu Dhabi, UAE.',
+  title:'RamadanHub | Iftar & Suhoor Registration',
+  description: 'Join your colleagues for blessed meals during the holy month of Ramadan 2027. Register for office Iftar and Suhoor gatherings in Abu Dhabi, UAE.',
   keywords: ['Ramadan', 'Iftar', 'Suhoor', 'Registration', 'Abu Dhabi', 'UAE', 'Office', 'Fasting'],
   authors: [{ name: 'Your Company Name' }],
   creator: 'Your Company Name',
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
     url: 'https://ramadan-mubarak-delta.vercel.app',
     siteName: 'RamadanHub',
     title: 'RamadanHub | Iftar & Suhoor Registration',
-    description: 'Join your colleagues for blessed meals during the holy month of Ramadan 2026.',
+    description: 'Join your colleagues for blessed meals during the holy month of Ramadan 2027.',
     images: [
       {
         url: '/images/og-image.png',
@@ -40,7 +41,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'RamadanHub | Iftar & Suhoor Registration',
-    description: 'Join your colleagues for blessed meals during Ramadan 2026.',
+    description: 'Join your colleagues for blessed meals during Ramadan 2027.',
     images: ['/images/og-image.png'],
   },
   // themeColor: '#0f172a',
@@ -62,7 +63,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className="bg-slate-950 text-white">
-        {children}
+        <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
   )

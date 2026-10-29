@@ -9,18 +9,12 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Format date to readable string
+ * Ramadan 1448 (2027) - expected per UAE astronomical calculations.
+ * The end includes the possible 30th day.
  */
-export function formatDate(date: Date | null): string {
-  if (!date) return ''
-  
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ]
-  
-  return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`
-}
+export const RAMADAN_YEAR = 2027
+export const RAMADAN_START = new Date(2027, 1, 8) // Mon, Feb 8, 2027
+export const RAMADAN_END = new Date(2027, 2, 9) // Tue, Mar 9, 2027
 
 /**
  * Convert a local date to yyyy-MM-dd without shifting to UTC
@@ -33,21 +27,19 @@ export function toDateKey(date: Date): string {
 }
 
 /**
- * Format a yyyy-MM-dd key to readable string
+ * Parse a yyyy-MM-dd key to a local date
  */
-export function formatDateKey(dateKey: string): string {
+export function fromDateKey(dateKey: string): Date | null {
   const [year, month, day] = dateKey.split('-').map(Number)
-  if (!year || !month || !day) return dateKey
-  return formatDate(new Date(year, month - 1, day))
+  if (!year || !month || !day) return null
+  return new Date(year, month - 1, day)
 }
 
 /**
- * Check if a date is within Ramadan 2026
+ * Check if a date is within Ramadan 2027
  */
 export function isRamadanDate(date: Date): boolean {
-  const ramadanStart = new Date(2026, 1, 17) // Feb 17, 2026
-  const ramadanEnd = new Date(2026, 2, 18) // March 18, 2026
-  return date >= ramadanStart && date <= ramadanEnd
+  return date >= RAMADAN_START && date <= RAMADAN_END
 }
 
 /**
@@ -65,84 +57,42 @@ export function getFirstDayOfMonth(year: number, month: number): number {
 }
 
 /**
- * Prayer times for Abu Dhabi (approximate for Ramadan 2026)
+ * Prayer times for Abu Dhabi as [hours, minutes] (24h),
+ * approximate for mid-Ramadan 2027 (Feb 23)
  */
 export const PRAYER_TIMES = {
-  fajr: '5:23 AM',
-  sunrise: '6:42 AM',
-  dhuhr: '12:32 PM',
-  asr: '3:52 PM',
-  maghrib: '6:18 PM',
-  isha: '7:36 PM',
-}
+  fajr: [5, 34],
+  sunrise: [6, 51],
+  dhuhr: [12, 38],
+  asr: [15, 55],
+  maghrib: [18, 22],
+  isha: [19, 38],
+} as const
+
+export type PrayerName = keyof typeof PRAYER_TIMES
 
 /**
- * Important dates for Ramadan 2026
+ * Approximate meal times as [hours, minutes] (24h)
  */
-export const IMPORTANT_DATES = [
-  {
-    date: '17 Feb',
-    hijriDate: '1 Ramadan 1447',
-    event: 'First Day of Ramadan',
-    description: 'Beginning of the holy month',
-    isHighlight: true,
-  },
-  {
-    date: '28 Feb',
-    hijriDate: '12 Ramadan 1447',
-    event: 'Office Iftar Gathering',
-    description: 'Company-wide Iftar event',
-    isHighlight: false,
-  },
-  {
-    date: '8 Mar',
-    hijriDate: '20 Ramadan 1447',
-    event: 'Last 10 Nights Begin',
-    description: 'Laylatul Qadr period begins',
-    isHighlight: false,
-  },
-  {
-    date: '13 Mar',
-    hijriDate: '25 Ramadan 1447',
-    event: 'Laylatul Qadr (Expected)',
-    description: 'Night of Power - odd nights',
-    isHighlight: true,
-  },
-  {
-    date: '18 Mar',
-    hijriDate: '30 Ramadan 1447',
-    event: 'Last Day of Ramadan',
-    description: 'Final day of fasting',
-    isHighlight: false,
-  },
-  {
-    date: '19 Mar',
-    hijriDate: '1 Shawwal 1447',
-    event: 'Eid Al-Fitr',
-    description: 'Celebration of breaking the fast',
-    isHighlight: true,
-  },
-  {
-    date: '19-21 Mar',
-    hijriDate: '1-3 Shawwal 1447',
-    event: 'Eid Holiday',
-    description: 'Official UAE public holidays',
-    isHighlight: false,
-  },
-]
+export const MEAL_TIMES = {
+  iftar: [18, 22],
+  suhoor: [4, 30],
+} as const
 
 /**
- * Department options
+ * Department values (labels live in the translations)
  */
 export const DEPARTMENTS = [
-  { value: 'IT', label: 'Information Technology' },
-  { value: 'HR', label: 'Human Resources' },
-  { value: 'Finance', label: 'Finance' },
-  { value: 'Marketing', label: 'Marketing' },
-  { value: 'Operations', label: 'Operations' },
-  { value: 'Sales', label: 'Sales' },
-  { value: 'Legal', label: 'Legal' },
-  { value: 'Executive', label: 'Executive' },
-  { value: 'Admin', label: 'Administration' },
-  { value: 'Other', label: 'Other' },
-]
+  'IT',
+  'HR',
+  'Finance',
+  'Marketing',
+  'Operations',
+  'Sales',
+  'Legal',
+  'Executive',
+  'Admin',
+  'Other',
+] as const
+
+export type Department = (typeof DEPARTMENTS)[number]

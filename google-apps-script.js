@@ -37,9 +37,10 @@ const SEND_EMAIL_CONFIRMATION = false;
 const ADMIN_EMAIL = 'hr@company.com';
 const TIMEZONE = 'Asia/Dubai';
 
-// Ramadan 2026 (inclusive, yyyy-MM-dd)
-const RAMADAN_START = '2026-02-17';
-const RAMADAN_END = '2026-03-18';
+// Ramadan 2027 / 1448 AH - expected per UAE astronomical calculations
+// (inclusive, yyyy-MM-dd; the end allows a 30th day)
+const RAMADAN_START = '2027-02-08';
+const RAMADAN_END = '2027-03-09';
 const MAX_GUESTS = 5;
 
 const HEADERS = [
@@ -336,7 +337,7 @@ function toDateKey(value) {
 }
 
 /**
- * yyyy-MM-dd → "Fri, 20 Feb 2026" (no timezone shifting)
+ * yyyy-MM-dd → "Wed, 10 Feb 2027" (no timezone shifting)
  */
 function formatDateKey(dateKey) {
   const parts = dateKey.split('-').map(Number);
@@ -364,7 +365,7 @@ function capitalizeFirst(str) {
 
 function sendConfirmationEmail(data, formattedDates) {
   const mealEmoji = data.mealType === 'iftar' ? '🌙' : '⭐';
-  const mealTime = data.mealType === 'iftar' ? '~6:18 PM' : '~4:30 AM';
+  const mealTime = data.mealType === 'iftar' ? '~6:20 PM' : '~4:30 AM';
 
   const subject = `${mealEmoji} RamadanHub: Your ${capitalizeFirst(data.mealType)} Registration is Confirmed`;
 
@@ -409,7 +410,7 @@ function testSubmission() {
         phone: '+971 50 123 4567',
         department: 'IT',
         mealType: 'iftar',
-        dates: ['2026-02-20', '2026-02-21'],
+        dates: ['2027-02-10', '2027-02-11'],
         guestCount: '2',
         dietaryNotes: 'Vegetarian'
       })

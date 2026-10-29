@@ -1,4 +1,4 @@
-import { RegistrationFormData, RegistrationResponse, LookupResponse } from './types'
+import { RegistrationFormData, RegistrationResponse, LookupResponse, FormErrorCode } from './types'
 import { toDateKey, isRamadanDate } from './utils'
 
 const GOOGLE_SCRIPT_URL = process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL || ''
@@ -41,6 +41,7 @@ export async function submitRegistration(
       // Non-JSON reply (e.g. a Google error page) - the save cannot be confirmed
       return {
         success: false,
+        errorCode: 'unconfirmed',
         error: 'Could not confirm your registration. Please try again.',
       }
     }
@@ -82,6 +83,7 @@ export async function submitRegistration(
     if (error instanceof TypeError) {
       return {
         success: false,
+        errorCode: 'network',
         error: 'Could not reach the registration server. Please try again later.',
       }
     }
@@ -119,39 +121,39 @@ export async function lookupRegistrations(
 }
 
 /**
- * Validate form data
+ * Validate form data - returns an error code (translated in the UI) or null
  */
-export function validateFormData(formData: RegistrationFormData): string | null {
+export function validateFormData(formData: RegistrationFormData): FormErrorCode | null {
   if (!formData.fullName.trim()) {
-    return 'Please enter your full name'
+    return 'fullName'
   }
 
   if (!formData.email.trim()) {
-    return 'Please enter your email address'
+    return 'email'
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-    return 'Please enter a valid email address'
+    return 'emailInvalid'
   }
 
   if (formData.phone.replace(/\D/g, '').length < 7) {
-    return 'Please enter a valid phone number'
+    return 'phone'
   }
 
   if (!formData.department) {
-    return 'Please select your department'
+    return 'department'
   }
 
   if (!formData.mealType) {
-    return 'Please select a meal type'
+    return 'mealType'
   }
 
   if (!formData.dates || formData.dates.length === 0) {
-    return 'Please select at least one date'
+    return 'dates'
   }
 
   if (formData.dates.some(d => !isRamadanDate(d))) {
-    return 'Please select dates within Ramadan (17 Feb – 18 Mar 2026)'
+    return 'datesOutOfRange'
   }
 
   return null
