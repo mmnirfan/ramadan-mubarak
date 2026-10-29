@@ -16,9 +16,9 @@ import {
   Info,
 } from 'lucide-react'
 import { DatePicker } from './ui'
-import { RegistrationFormData, initialFormData } from '@/lib/types'
-import { submitRegistration, validateFormData, RegistrationResponse } from '@/lib/api'
-import { DEPARTMENTS } from '@/lib/utils'
+import { RegistrationFormData, RegistrationResponse, initialFormData } from '@/lib/types'
+import { submitRegistration, validateFormData } from '@/lib/api'
+import { DEPARTMENTS, formatDateKey } from '@/lib/utils'
 
 export function RegistrationForm() {
   const [formData, setFormData] = useState<RegistrationFormData>(initialFormData)
@@ -30,6 +30,7 @@ export function RegistrationForm() {
     duplicateDates?: string[]
     partialDuplicate?: boolean
     isDuplicate?: boolean
+    duplicateType?: 'name' | 'phone'
     mealType?: string
   } | null>(null)
 
@@ -86,13 +87,14 @@ export function RegistrationForm() {
         // All dates were duplicates
         setSubmitResult({
           isDuplicate: true,
+          duplicateType: result.duplicateType,
           duplicateDates: result.duplicateDates,
           mealType: result.mealType,
         })
       } else {
         setSubmitError(result.error || 'Failed to submit. Please try again.')
       }
-    } catch (error) {
+    } catch {
       setSubmitError('An unexpected error occurred. Please try again.')
     } finally {
       setIsSubmitting(false)
@@ -102,6 +104,7 @@ export function RegistrationForm() {
   const isFormValid =
     formData.fullName &&
     formData.email &&
+    formData.phone &&
     formData.department &&
     formData.mealType &&
     formData.dates.length > 0
@@ -135,7 +138,7 @@ export function RegistrationForm() {
                 Registration Successful!
               </h3>
               <p className="text-slate-400 mb-4">
-                Jazak Allah Khair. You&apos;ll receive a confirmation email shortly.
+                Jazak Allah Khair. Your registration has been recorded.
               </p>
               
               {/* Show saved dates */}
@@ -148,7 +151,7 @@ export function RegistrationForm() {
                   <div className="flex flex-wrap gap-2">
                     {submitResult.savedDates.map((date, i) => (
                       <span key={i} className="text-emerald-200 text-sm bg-emerald-500/20 px-2 py-1 rounded">
-                        {date}
+                        {formatDateKey(date)}
                       </span>
                     ))}
                   </div>
@@ -165,7 +168,7 @@ export function RegistrationForm() {
                   <div className="flex flex-wrap gap-2">
                     {submitResult.duplicateDates.map((date, i) => (
                       <span key={i} className="text-amber-200 text-sm bg-amber-500/20 px-2 py-1 rounded">
-                        {date}
+                        {formatDateKey(date)}
                       </span>
                     ))}
                   </div>
@@ -230,12 +233,13 @@ export function RegistrationForm() {
 
                   <div>
                     <label className="block text-amber-200/80 text-sm font-medium mb-2">
-                      Phone Number
+                      Phone Number *
                     </label>
                     <div className="relative">
                       <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400/50" />
                       <input
                         type="tel"
+                        required
                         value={formData.phone}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
                         placeholder="+971 XX XXX XXXX"
@@ -385,12 +389,12 @@ export function RegistrationForm() {
                       Already Registered!
                     </p>
                     <p className="text-amber-300/90 text-sm mb-2">
-                      You have already registered for <strong>{submitResult.mealType}</strong> on all selected dates:
+                      {submitResult.duplicateType === 'name' ? 'Someone with this name has' : 'This mobile number has'} already registered for <strong>{submitResult.mealType}</strong> on all selected dates:
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {submitResult.duplicateDates?.map((date, i) => (
                         <span key={i} className="text-amber-200 text-sm bg-amber-500/20 px-2 py-1 rounded">
-                          {date}
+                          {formatDateKey(date)}
                         </span>
                       ))}
                     </div>

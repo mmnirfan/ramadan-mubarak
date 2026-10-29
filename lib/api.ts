@@ -1,19 +1,7 @@
-import { RegistrationFormData, ApiResponse } from './types'
+import { RegistrationFormData, RegistrationResponse, LookupResponse } from './types'
+import { toDateKey, isRamadanDate } from './utils'
 
 const GOOGLE_SCRIPT_URL = process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL || ''
-
-/**
- * Extended API Response with multiple dates support
- */
-export interface RegistrationResponse extends ApiResponse {
-  isDuplicate?: boolean
-  partialDuplicate?: boolean
-  duplicateType?: 'email' | 'phone'
-  mealType?: string
-  date?: string
-  savedDates?: string[]
-  duplicateDates?: string[]
-}
 
 /**
  * Submit registration to Google Sheets (supports multiple dates)
@@ -25,7 +13,7 @@ export async function submitRegistration(
     // Prepare data for submission
     const submitData = {
       ...formData,
-      dates: formData.dates.map(d => d.toISOString().split('T')[0]),
+      dates: formData.dates.map(toDateKey),
       timestamp: new Date().toISOString(),
     }
 
@@ -46,48 +34,86 @@ export async function submitRegistration(
       body: JSON.stringify(submitData),
     })
 
+    let result: RegistrationResponse
     try {
-      const result = await response.json()
-      
-      if (result.isDuplicate) {
-        return {
-          success: false,
-          isDuplicate: true,
-          duplicateType: result.duplicateType,
-          mealType: result.mealType,
-          duplicateDates: result.duplicateDates,
-          message: result.message,
-          error: result.message,
-        }
-      }
-      
-      if (result.partialDuplicate) {
-        return {
-          success: true,
-          partialDuplicate: true,
-          mealType: result.mealType,
-          savedDates: result.savedDates,
-          duplicateDates: result.duplicateDates,
-          message: result.message,
-        }
-      }
-      
-      return {
-        success: result.success,
-        savedDates: result.savedDates,
-        message: result.message || 'Registration saved successfully',
-      }
+      result = await response.json()
     } catch {
+      // Non-JSON reply (e.g. a Google error page) - the save cannot be confirmed
+      return {
+        success: false,
+        error: 'Could not confirm your registration. Please try again.',
+      }
+    }
+
+    if (result.isDuplicate) {
+      return {
+        success: false,
+        isDuplicate: true,
+        duplicateType: result.duplicateType,
+        mealType: result.mealType,
+        duplicateDates: result.duplicateDates,
+        message: result.message,
+        error: result.message,
+      }
+    }
+
+    if (result.partialDuplicate) {
       return {
         success: true,
-        message: 'Registration saved successfully',
+        partialDuplicate: true,
+        duplicateType: result.duplicateType,
+        mealType: result.mealType,
+        savedDates: result.savedDates,
+        duplicateDates: result.duplicateDates,
+        message: result.message,
       }
+    }
+
+    return {
+      success: Boolean(result.success),
+      savedDates: result.savedDates,
+      message: result.message || 'Registration saved successfully',
+      error: result.error,
     }
   } catch (error) {
     console.error('Submission error:', error)
+    // Network/CORS failure - usually the Apps Script deployment is not
+    // shared with "Anyone", so Google returns a sign-in page instead of JSON
+    if (error instanceof TypeError) {
+      return {
+        success: false,
+        error: 'Could not reach the registration server. Please try again later.',
+      }
+    }
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to submit registration',
+    }
+  }
+}
+
+/**
+ * Fetch existing registrations from Google Sheets by mobile number or name
+ */
+export async function lookupRegistrations(
+  query: { phone?: string; name?: string }
+): Promise<LookupResponse> {
+  if (!GOOGLE_SCRIPT_URL) {
+    return { success: true, count: 0, registrations: [] }
+  }
+
+  try {
+    const params = new URLSearchParams()
+    if (query.phone?.trim()) params.set('phone', query.phone.trim())
+    if (query.name?.trim()) params.set('name', query.name.trim())
+
+    const response = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`)
+    return await response.json()
+  } catch (error) {
+    console.error('Lookup error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch registrations',
     }
   }
 }
@@ -99,26 +125,34 @@ export function validateFormData(formData: RegistrationFormData): string | null 
   if (!formData.fullName.trim()) {
     return 'Please enter your full name'
   }
-  
+
   if (!formData.email.trim()) {
     return 'Please enter your email address'
   }
-  
-  if (!formData.email.includes('@')) {
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
     return 'Please enter a valid email address'
   }
-  
+
+  if (formData.phone.replace(/\D/g, '').length < 7) {
+    return 'Please enter a valid phone number'
+  }
+
   if (!formData.department) {
     return 'Please select your department'
   }
-  
+
   if (!formData.mealType) {
     return 'Please select a meal type'
   }
-  
+
   if (!formData.dates || formData.dates.length === 0) {
     return 'Please select at least one date'
   }
-  
+
+  if (formData.dates.some(d => !isRamadanDate(d))) {
+    return 'Please select dates within Ramadan (17 Feb – 18 Mar 2026)'
+  }
+
   return null
 }

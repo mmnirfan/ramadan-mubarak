@@ -23,6 +23,25 @@ export function formatDate(date: Date | null): string {
 }
 
 /**
+ * Convert a local date to yyyy-MM-dd without shifting to UTC
+ * (toISOString() would move UAE midnight to the previous day)
+ */
+export function toDateKey(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
+/**
+ * Format a yyyy-MM-dd key to readable string
+ */
+export function formatDateKey(dateKey: string): string {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  if (!year || !month || !day) return dateKey
+  return formatDate(new Date(year, month - 1, day))
+}
+
+/**
  * Check if a date is within Ramadan 2026
  */
 export function isRamadanDate(date: Date): boolean {
