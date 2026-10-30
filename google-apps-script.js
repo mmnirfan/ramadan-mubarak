@@ -3,12 +3,13 @@
  * RamadanHub - Google Apps Script Backend
  * ========================================
  *
- * This script handles form submissions from the RamadanHub
- * registration form and stores them in Google Sheets.
+ * This script handles Sehri registrations from the RamadanHub form
+ * (people staying in PGs / hostels / rooms in Hoskote) and stores them
+ * in Google Sheets.
  *
  * - POST: saves one row per selected date. Dates the person is already
- *   registered for (same meal type, matched by mobile number OR name)
- *   are skipped and reported back as duplicates.
+ *   registered for (matched by mobile number OR name) are skipped and
+ *   reported back as duplicates.
  * - GET ?phone=... or ?name=...: returns that person's existing
  *   registrations (meal type + dates only, no personal details).
  *
@@ -34,36 +35,49 @@
 const SPREADSHEET_ID = '15eLrUfUYoP2F_EB72ddowXhdrrkOUgnowOx5d9fQNUk';
 const SHEET_NAME = 'Sheet1';
 const SEND_EMAIL_CONFIRMATION = false;
-const ADMIN_EMAIL = 'hr@company.com';
+const ADMIN_EMAIL = 'sehri@example.com';
 const TIMEZONE = 'Asia/Kolkata';
 
 // Ramadan 2027 / 1448 AH - expected in India (subject to moon sighting)
 // (inclusive, yyyy-MM-dd; the end allows a 30th day)
 const RAMADAN_START = '2027-02-09';
 const RAMADAN_END = '2027-03-10';
-const MAX_GUESTS = 5;
+
+// Registrations are for Sehri only
+const MEAL_TYPE = 'Sehri';
 
 const HEADERS = [
   'Timestamp',
   'Full Name',
-  'Employee ID',
-  'Email',
   'Phone',
-  'Department',
+  'Email',
+  'Occupation',
+  'Address',
+  'Nearest Masjid',
   'Meal Type',
   'Date',
   'Date Key',
-  'Guests',
-  'Dietary Notes'
+  'Status',
+  'Cancelled At',
+  'Cancel Reason'
 ];
 
 // 0-based column indexes, must match HEADERS
 const COL = {
   NAME: 1,
-  PHONE: 4,
-  MEAL_TYPE: 6,
-  DATE_KEY: 8
+  PHONE: 2,
+  EMAIL: 3,
+  MEAL_TYPE: 7,
+  DATE_KEY: 9,
+  STATUS: 10,
+  CANCELLED_AT: 11,
+  CANCEL_REASON: 12
 };
+
+// Cancelled bookings are kept (marked, not deleted) so organisers keep a record
+const STATUS_ACTIVE = 'Active';
+const STATUS_CANCELLED = 'Cancelled';
+const REASON_MAX_LENGTH = 300;
 
 // ============================================
 // MAIN HANDLERS
@@ -74,8 +88,13 @@ function doPost(e) {
 
   try {
     const data = JSON.parse(e.postData.contents);
+
+    if (data.action === 'cancel') {
+      return cancelRegistrations(data, lock);
+    }
+
     const dates = validateData(data);
-    const mealType = String(data.mealType).toLowerCase();
+    const mealType = MEAL_TYPE.toLowerCase();
 
     // Prevent two simultaneous submissions both passing the duplicate check
     lock.waitLock(20000);
@@ -102,15 +121,17 @@ function doPost(e) {
       const rows = savedDates.map(dateKey => [
         timestamp,
         sanitize(data.fullName),
-        sanitize(data.employeeId),
-        sanitize(data.email),
         sanitize(data.phone),
-        sanitize(data.department),
-        capitalizeFirst(mealType),
+        sanitize(data.email),
+        sanitize(data.occupation),
+        sanitize(data.address),
+        sanitize(data.masjidName),
+        MEAL_TYPE,
         formatDateKey(dateKey),
         dateKey,
-        Number(data.guestCount) || 1,
-        sanitize(data.dietaryNotes)
+        STATUS_ACTIVE,
+        '',
+        ''
       ]);
 
       const startRow = sheet.getLastRow() + 1;
@@ -224,8 +245,8 @@ function getSheet() {
 }
 
 /**
- * Returns all rows that belong to the same person, matched by
- * normalized mobile number OR normalized name.
+ * Returns all active (not cancelled) rows that belong to the same person,
+ * matched by normalized mobile number OR normalized name.
  */
 function findRegistrations(sheet, phone, name) {
   const phoneKey = normalizePhone(phone);
@@ -238,6 +259,9 @@ function findRegistrations(sheet, phone, name) {
   const results = [];
 
   values.forEach(row => {
+    // A cancelled booking doesn't block registering for that date again
+    if (row[COL.STATUS] === STATUS_CANCELLED) return;
+
     let matchedBy = null;
     if (phoneKey && normalizePhone(row[COL.PHONE]) === phoneKey) {
       matchedBy = 'phone';
@@ -257,6 +281,76 @@ function findRegistrations(sheet, phone, name) {
   return results;
 }
 
+/**
+ * Marks the person's active bookings on the given dates as cancelled.
+ * The person is identified by mobile number (phone) or email.
+ */
+function cancelRegistrations(data, lock) {
+  const phoneKey = normalizePhone(data.phone);
+  const emailKey = normalizeEmail(data.email);
+
+  if (phoneKey.length < 10 && !emailKey) {
+    throw new Error('Enter the mobile number or email you registered with');
+  }
+  if (emailKey && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailKey)) {
+    throw new Error('Invalid email format');
+  }
+
+  const dates = validateDates(data.dates);
+  const today = Utilities.formatDate(new Date(), TIMEZONE, 'yyyy-MM-dd');
+  const past = dates.filter(d => d < today);
+  if (past.length > 0) {
+    throw new Error(`These dates have already passed: ${past.join(', ')}`);
+  }
+
+  const reason = sanitize(String(data.reason || '').slice(0, REASON_MAX_LENGTH));
+
+  lock.waitLock(20000);
+
+  const sheet = getSheet();
+  const lastRow = sheet.getLastRow();
+  const values = lastRow < 2 ? [] : sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getValues();
+  const cancelledAt = new Date();
+  const cancelled = new Set();
+
+  values.forEach((row, i) => {
+    if (row[COL.STATUS] === STATUS_CANCELLED) return;
+    const dateKey = toDateKey(row[COL.DATE_KEY]);
+    if (!dates.includes(dateKey)) return;
+
+    const samePerson = (phoneKey && normalizePhone(row[COL.PHONE]) === phoneKey) ||
+      (emailKey && normalizeEmail(row[COL.EMAIL]) === emailKey);
+    if (!samePerson) return;
+
+    // Status, Cancelled At, Cancel Reason are adjacent columns
+    sheet.getRange(i + 2, COL.STATUS + 1, 1, 3).setValues([[STATUS_CANCELLED, cancelledAt, reason]]);
+    cancelled.add(dateKey);
+  });
+
+  SpreadsheetApp.flush();
+  lock.releaseLock();
+
+  const cancelledDates = dates.filter(d => cancelled.has(d));
+  const notFoundDates = dates.filter(d => !cancelled.has(d));
+  console.log(`Cancellation: ${phoneKey || emailKey} cancelled [${cancelledDates}] not found [${notFoundDates}]`);
+
+  if (cancelledDates.length === 0) {
+    return createJsonResponse({
+      success: false,
+      notFound: true,
+      notFoundDates: notFoundDates,
+      message: 'No active Sehri booking found for these dates'
+    });
+  }
+
+  return createJsonResponse({
+    success: true,
+    cancelledDates: cancelledDates,
+    notFoundDates: notFoundDates,
+    message: `Cancelled Sehri on ${cancelledDates.length} date(s)`
+  });
+}
+
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
@@ -271,7 +365,7 @@ function createJsonResponse(data) {
  * Validates the payload and returns the unique, sorted list of date keys.
  */
 function validateData(data) {
-  const required = ['fullName', 'email', 'phone', 'department', 'mealType'];
+  const required = ['fullName', 'phone', 'occupation', 'address', 'masjidName'];
   const missing = required.filter(field => !String(data[field] || '').trim());
 
   if (!Array.isArray(data.dates) || data.dates.length === 0) {
@@ -282,25 +376,34 @@ function validateData(data) {
     throw new Error(`Missing required fields: ${missing.join(', ')}`);
   }
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+  // Email is optional, but must be valid when given
+  const email = String(data.email || '').trim();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new Error('Invalid email format');
   }
 
-  if (normalizePhone(data.phone).length < 7) {
-    throw new Error('Invalid phone number');
+  if (normalizePhone(data.phone).length < 10) {
+    throw new Error('Invalid mobile number');
   }
 
-  const mealType = String(data.mealType).toLowerCase();
-  if (mealType !== 'iftar' && mealType !== 'suhoor') {
-    throw new Error('Invalid meal type');
+  // Only Sehri registrations are accepted (the form sends "suhoor")
+  const mealType = String(data.mealType || 'suhoor').toLowerCase();
+  if (mealType !== 'suhoor' && mealType !== 'sehri') {
+    throw new Error('Only Sehri registrations are accepted');
   }
 
-  const guests = Number(data.guestCount || 1);
-  if (!Number.isInteger(guests) || guests < 1 || guests > MAX_GUESTS) {
-    throw new Error(`Guest count must be between 1 and ${MAX_GUESTS}`);
+  return validateDates(data.dates);
+}
+
+/**
+ * Checks a list of yyyy-MM-dd dates and returns them unique and sorted.
+ */
+function validateDates(rawDates) {
+  if (!Array.isArray(rawDates) || rawDates.length === 0) {
+    throw new Error('Missing required fields: dates');
   }
 
-  const dates = [...new Set(data.dates.map(String))].sort();
+  const dates = [...new Set(rawDates.map(String))].sort();
   dates.forEach(d => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) {
       throw new Error(`Invalid date: ${d}`);
@@ -324,6 +427,10 @@ function normalizePhone(phone) {
 
 function normalizeName(name) {
   return String(name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
 }
 
 /**
@@ -364,24 +471,18 @@ function capitalizeFirst(str) {
 // ============================================
 
 function sendConfirmationEmail(data, formattedDates) {
-  const mealEmoji = data.mealType === 'iftar' ? '🌙' : '⭐';
-  const mealTime = data.mealType === 'iftar' ? '~6:28 PM' : '~4:30 AM';
-
-  const subject = `${mealEmoji} RamadanHub: Your ${capitalizeFirst(data.mealType)} Registration is Confirmed`;
+  const subject = '⭐ RamadanHub: Your Sehri Registration is Confirmed';
 
   const body = `
 Assalamu Alaikum ${data.fullName},
 
-Your registration has been confirmed!
+Your Sehri registration has been confirmed!
 
 DETAILS:
-- Meal Type: ${capitalizeFirst(data.mealType)}
 - Dates: ${formattedDates.join('; ')}
-- Time: ${mealTime}
-- Guests: ${data.guestCount}
-${data.dietaryNotes ? `- Dietary Notes: ${data.dietaryNotes}` : ''}
-
-Location: Main Conference Hall
+- Staying at: ${data.address}
+- Nearest masjid: ${data.masjidName}
+- Sehri ends: around 5:16 - 5:27 AM (see the timetable for each day)
 
 Jazak Allah Khair!
 
@@ -405,14 +506,13 @@ function testSubmission() {
     postData: {
       contents: JSON.stringify({
         fullName: 'Test User',
-        employeeId: 'EMP-TEST',
-        email: 'test@example.com',
         phone: '+91 98765 43210',
-        department: 'IT',
-        mealType: 'iftar',
-        dates: ['2027-02-10', '2027-02-11'],
-        guestCount: '2',
-        dietaryNotes: 'Vegetarian'
+        email: '',
+        occupation: 'Student',
+        address: 'Test PG, Room 12, Hoskote',
+        masjidName: 'Test Masjid',
+        mealType: 'suhoor',
+        dates: ['2027-02-10', '2027-02-11']
       })
     }
   };

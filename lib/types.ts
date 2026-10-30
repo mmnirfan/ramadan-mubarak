@@ -1,16 +1,19 @@
+import type { Occupation } from './utils'
+
 /**
- * Form data types for registration (supports multiple dates)
+ * Sehri registration for people staying in PGs / hostels / rooms in Hoskote
+ * (supports multiple dates)
  */
 export interface RegistrationFormData {
   fullName: string
-  email: string
   phone: string
-  department: string
-  employeeId: string
-  mealType: 'iftar' | 'suhoor' | ''
-  dates: Date[]  // Changed from single date to array
-  guestCount: string
-  dietaryNotes: string
+  email: string        // optional
+  occupation: Occupation | ''
+  occupationOther: string  // free text when occupation is 'other'
+  address: string      // where they are staying (PG / hostel / room)
+  masjidName: string   // nearest masjid to where they are staying
+  mealType: 'suhoor'  // Sehri only
+  dates: Date[]
 }
 
 /**
@@ -18,14 +21,14 @@ export interface RegistrationFormData {
  */
 export const initialFormData: RegistrationFormData = {
   fullName: '',
-  email: '',
   phone: '',
-  department: '',
-  employeeId: '',
-  mealType: '',
-  dates: [],  // Empty array for multiple dates
-  guestCount: '1',
-  dietaryNotes: '',
+  email: '',
+  occupation: '',
+  occupationOther: '',
+  address: '',
+  masjidName: '',
+  mealType: 'suhoor',
+  dates: [],
 }
 
 /**
@@ -75,13 +78,16 @@ export interface RegistrationResponse extends ApiResponse {
  */
 export type FormErrorCode =
   | 'fullName'
-  | 'email'
   | 'emailInvalid'
   | 'phone'
-  | 'department'
-  | 'mealType'
+  | 'occupation'
+  | 'occupationOther'
+  | 'address'
+  | 'masjidName'
   | 'dates'
   | 'datesOutOfRange'
+  | 'contact'
+  | 'notFound'
   | 'network'
   | 'unconfirmed'
   | 'generic'
@@ -104,9 +110,22 @@ export interface LookupResponse extends ApiResponse {
 }
 
 /**
- * Department option type
+ * Sehri cancellation - identified by the mobile number or email used to register
  */
-export interface DepartmentOption {
-  value: string
-  label: string
+export interface CancellationFormData {
+  contact: string  // mobile number or email
+  dates: Date[]
+  reason: string   // optional
+}
+
+export const initialCancellationData: CancellationFormData = {
+  contact: '',
+  dates: [],
+  reason: '',
+}
+
+export interface CancellationResponse extends ApiResponse {
+  cancelledDates?: string[]  // yyyy-MM-dd
+  notFoundDates?: string[]   // yyyy-MM-dd - no active booking on these dates
+  errorCode?: FormErrorCode
 }

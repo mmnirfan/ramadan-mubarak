@@ -2,6 +2,8 @@ import {
   Header,
   HeroSection,
   RegistrationForm,
+  RamadanTimetableSection,
+  CancellationSection,
   ImportantDatesSection,
   GuidelinesSection,
   EidSection,
@@ -23,8 +25,17 @@ export default function Home() {
       {/* Hero Section */}
       <HeroSection />
 
+      {/* Sehri & Iftar Timetable */}
+      <RamadanTimetableSection />
+
+      {/* Section Divider */}
+      <div className="section-divider max-w-4xl mx-auto my-8" />
+
       {/* Registration Form */}
       <RegistrationForm />
+
+      {/* Sehri Cancellation (opens a dialog) */}
+      <CancellationSection />
 
       {/* Section Divider */}
       <div className="section-divider max-w-4xl mx-auto my-8" />
@@ -35,7 +46,7 @@ export default function Home() {
       {/* Section Divider */}
       <div className="section-divider max-w-4xl mx-auto my-8" />
 
-      {/* Office Guidelines */}
+      {/* Sehri Service Guidelines */}
       <GuidelinesSection />
 
       {/* Section Divider */}

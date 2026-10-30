@@ -2,6 +2,7 @@
 
 import { MessageCircle, Mail, Phone } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n'
+import { CONTACT_EMAIL, CONTACT_PHONE } from '@/lib/utils'
 
 export function ContactSection() {
   const { t } = useLanguage()
@@ -19,18 +20,18 @@ export function ContactSection() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
-              href="mailto:hr@company.com"
+              href={`mailto:${CONTACT_EMAIL}`}
               className="flex items-center gap-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 rounded-xl px-6 py-3 text-amber-200 transition-all duration-300"
             >
               <Mail className="w-5 h-5" />
-              <span dir="ltr">hr@company.com</span>
+              <span dir="ltr">{CONTACT_EMAIL}</span>
             </a>
             <a
-              href="tel:+918012345678"
+              href={`tel:${CONTACT_PHONE.replace(/\s/g, '')}`}
               className="flex items-center gap-2 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 rounded-xl px-6 py-3 text-slate-200 transition-all duration-300"
             >
               <Phone className="w-5 h-5" />
-              <span dir="ltr">+91 80 1234 5678</span>
+              <span dir="ltr">{CONTACT_PHONE}</span>
             </a>
           </div>
         </div>

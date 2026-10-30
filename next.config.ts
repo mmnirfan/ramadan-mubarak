@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSerwist } from "@serwist/turbopack";
 
 const nextConfig = {
   reactStrictMode: true,
@@ -12,4 +13,6 @@ const nextConfig = {
   },
 } satisfies NextConfig;
 
-export default nextConfig;
+// PWA: Serwist (the maintained successor of next-pwa) builds the service worker
+// served from /serwist/sw.js - see app/serwist/[path]/route.ts and app/sw.ts
+export default withSerwist(nextConfig);

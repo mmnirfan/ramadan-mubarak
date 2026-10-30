@@ -57,11 +57,11 @@ export function getFirstDayOfMonth(year: number, month: number): number {
 }
 
 /**
- * Prayer times for Bengaluru as [hours, minutes] (24h), Asr per Hanafi method,
+ * Prayer times for Hoskote / Bengaluru as [hours, minutes] (24h), Asr per Hanafi method,
  * approximate for mid-Ramadan 2027 (Feb 24)
  */
 export const PRAYER_TIMES = {
-  fajr: [5, 27],
+  fajr: [5, 28],
   sunrise: [6, 38],
   dhuhr: [12, 35],
   asr: [16, 49],
@@ -72,27 +72,20 @@ export const PRAYER_TIMES = {
 export type PrayerName = keyof typeof PRAYER_TIMES
 
 /**
- * Approximate meal times as [hours, minutes] (24h)
+ * Occupation options shown as grouped dropdown (labels live in the translations)
  */
-export const MEAL_TIMES = {
-  iftar: [18, 28],
-  suhoor: [4, 30],
+export const OCCUPATION_GROUPS = {
+  education: ['collegeStudent', 'schoolStudent', 'madrasaStudent'],
+  working: ['privateEmployee', 'governmentEmployee', 'factoryWorker', 'healthcareWorker', 'driver', 'dailyWage'],
+  business: ['businessOwner', 'shopkeeper', 'selfEmployed'],
+  other: ['jobSeeker', 'other'],
 } as const
 
-/**
- * Department values (labels live in the translations)
- */
-export const DEPARTMENTS = [
-  'IT',
-  'HR',
-  'Finance',
-  'Marketing',
-  'Operations',
-  'Sales',
-  'Legal',
-  'Executive',
-  'Admin',
-  'Other',
-] as const
+export type OccupationGroup = keyof typeof OCCUPATION_GROUPS
+export type Occupation = (typeof OCCUPATION_GROUPS)[OccupationGroup][number]
 
-export type Department = (typeof DEPARTMENTS)[number]
+/**
+ * Organisers' contact details (placeholders - replace before going live)
+ */
+export const CONTACT_EMAIL = 'sehri@example.com'
+export const CONTACT_PHONE = '+91 80 1234 5678'

@@ -1,28 +1,32 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import {
   User,
   Mail,
   Phone,
-  Building2,
-  ChefHat,
-  Users,
+  Briefcase,
+  House,
+  MapPin,
+  Landmark,
+  Moon,
   Sparkles,
   Send,
   CheckCircle2,
   AlertCircle,
   AlertTriangle,
   Info,
+  Clock,
 } from 'lucide-react'
 import { DatePicker } from './ui'
 import { RegistrationFormData, RegistrationResponse, FormErrorCode, initialFormData } from '@/lib/types'
 import { submitRegistration, validateFormData } from '@/lib/api'
-import { DEPARTMENTS, MEAL_TIMES } from '@/lib/utils'
+import { OCCUPATION_GROUPS, OccupationGroup } from '@/lib/utils'
 import { useLanguage } from '@/lib/i18n'
 
 export function RegistrationForm() {
-  const { t, locale, formatDateKey, formatTime } = useLanguage()
+  const { t, locale, formatDateKey } = useLanguage()
   const [formData, setFormData] = useState<RegistrationFormData>(initialFormData)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -33,16 +37,9 @@ export function RegistrationForm() {
     partialDuplicate?: boolean
     isDuplicate?: boolean
     duplicateType?: 'name' | 'phone'
-    mealType?: string
   } | null>(null)
 
-  // The server sends "Iftar" / "Suhoor" - show it in the current language
-  const mealLabel = (mealType?: string) => {
-    const key = mealType?.toLowerCase()
-    return key === 'iftar' || key === 'suhoor' ? t.meals[key] : mealType
-  }
-
-  const handleInputChange = (field: keyof RegistrationFormData, value: string | Date[] | null) => {
+  const handleInputChange = (field: keyof RegistrationFormData, value: string | Date[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     setSubmitError(null)
     setSubmitResult(null)
@@ -82,7 +79,6 @@ export function RegistrationForm() {
           savedDates: result.savedDates,
           duplicateDates: result.duplicateDates,
           partialDuplicate: true,
-          mealType: result.mealType,
         })
         setIsSubmitted(true)
 
@@ -97,7 +93,6 @@ export function RegistrationForm() {
           isDuplicate: true,
           duplicateType: result.duplicateType,
           duplicateDates: result.duplicateDates,
-          mealType: result.mealType,
         })
       } else {
         setSubmitError({ code: result.errorCode ?? 'generic', detail: result.error })
@@ -117,15 +112,19 @@ export function RegistrationForm() {
     : ''
 
   const isFormValid =
-    formData.fullName &&
-    formData.email &&
-    formData.phone &&
-    formData.department &&
-    formData.mealType &&
+    formData.fullName.trim() &&
+    formData.phone.trim() &&
+    formData.occupation &&
+    (formData.occupation !== 'other' || formData.occupationOther.trim()) &&
+    formData.address.trim() &&
+    formData.masjidName.trim() &&
     formData.dates.length > 0
 
+  const labelClass = 'block text-amber-200/80 text-sm font-medium mb-2'
+  const iconClass = 'absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400/50'
+
   return (
-    <section className="relative z-10 px-6 py-16">
+    <section id="register" className="relative z-10 px-6 py-16 scroll-mt-6">
       <div className="max-w-4xl mx-auto">
         <div className="glass-card rounded-3xl p-8 md:p-12 animate-slide-up">
           {/* Form Header */}
@@ -192,7 +191,7 @@ export function RegistrationForm() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Personal Information */}
+              {/* Personal Details */}
               <div className="space-y-6">
                 <div className="flex items-center gap-2 text-amber-300 mb-4">
                   <User className="w-5 h-5" />
@@ -203,41 +202,54 @@ export function RegistrationForm() {
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-amber-200/80 text-sm font-medium mb-2">
+                    <label htmlFor="fullName" className={labelClass}>
                       {t.form.fullName}
                     </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.fullName}
-                      onChange={(e) => handleInputChange('fullName', e.target.value)}
-                      placeholder={t.form.fullNamePlaceholder}
-                      className="input-field"
-                    />
+                    <div className="relative">
+                      <User className={iconClass} />
+                      <input
+                        id="fullName"
+                        type="text"
+                        required
+                        autoComplete="name"
+                        value={formData.fullName}
+                        onChange={(e) => handleInputChange('fullName', e.target.value)}
+                        placeholder={t.form.fullNamePlaceholder}
+                        className="input-field ps-12"
+                      />
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-amber-200/80 text-sm font-medium mb-2">
-                      {t.form.employeeId}
+                    <label htmlFor="phone" className={labelClass}>
+                      {t.form.phone}
                     </label>
-                    <input
-                      type="text"
-                      value={formData.employeeId}
-                      onChange={(e) => handleInputChange('employeeId', e.target.value)}
-                      placeholder={t.form.employeeIdPlaceholder}
-                      className="input-field"
-                    />
+                    <div className="relative" dir="ltr">
+                      <Phone className={iconClass} />
+                      <input
+                        id="phone"
+                        type="tel"
+                        required
+                        autoComplete="tel"
+                        inputMode="tel"
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        placeholder={t.form.phonePlaceholder}
+                        className="input-field ps-12"
+                      />
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-amber-200/80 text-sm font-medium mb-2">
+                    <label htmlFor="email" className={labelClass}>
                       {t.form.email}
                     </label>
                     <div className="relative" dir="ltr">
-                      <Mail className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400/50" />
+                      <Mail className={iconClass} />
                       <input
+                        id="email"
                         type="email"
-                        required
+                        autoComplete="email"
                         value={formData.email}
                         onChange={(e) => handleInputChange('email', e.target.value)}
                         placeholder={t.form.emailPlaceholder}
@@ -247,108 +259,119 @@ export function RegistrationForm() {
                   </div>
 
                   <div>
-                    <label className="block text-amber-200/80 text-sm font-medium mb-2">
-                      {t.form.phone}
-                    </label>
-                    <div className="relative" dir="ltr">
-                      <Phone className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400/50" />
-                      <input
-                        type="tel"
-                        required
-                        value={formData.phone}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                        placeholder={t.form.phonePlaceholder}
-                        className="input-field ps-12"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-amber-200/80 text-sm font-medium mb-2">
-                      {t.form.department}
+                    <label htmlFor="occupation" className={labelClass}>
+                      {t.form.occupation}
                     </label>
                     <div className="relative">
-                      <Building2 className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400/50" />
+                      <Briefcase className={iconClass} />
                       <select
+                        id="occupation"
                         required
-                        value={formData.department}
-                        onChange={(e) => handleInputChange('department', e.target.value)}
+                        value={formData.occupation}
+                        onChange={(e) => handleInputChange('occupation', e.target.value)}
                         className="input-field ps-12 appearance-none cursor-pointer"
                       >
                         <option value="" className="bg-slate-900">
-                          {t.form.departmentPlaceholder}
+                          {t.form.occupationPlaceholder}
                         </option>
-                        {DEPARTMENTS.map((dept) => (
-                          <option key={dept} value={dept} className="bg-slate-900">
-                            {t.departments[dept]}
-                          </option>
+                        {(Object.keys(OCCUPATION_GROUPS) as OccupationGroup[]).map((group) => (
+                          <optgroup key={group} label={t.occupationGroups[group]} className="bg-slate-900">
+                            {OCCUPATION_GROUPS[group].map((occupation) => (
+                              <option key={occupation} value={occupation} className="bg-slate-900">
+                                {t.occupations[occupation]}
+                              </option>
+                            ))}
+                          </optgroup>
                         ))}
                       </select>
                     </div>
                   </div>
+
+                  {formData.occupation === 'other' && (
+                    <div className="md:col-span-2 animate-fade-in">
+                      <label htmlFor="occupationOther" className={labelClass}>
+                        {t.form.occupationOther}
+                      </label>
+                      <div className="relative">
+                        <Briefcase className={iconClass} />
+                        <input
+                          id="occupationOther"
+                          type="text"
+                          required
+                          autoFocus
+                          value={formData.occupationOther}
+                          onChange={(e) => handleInputChange('occupationOther', e.target.value)}
+                          placeholder={t.form.occupationOtherPlaceholder}
+                          className="input-field ps-12"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Meal Details */}
+              {/* Where You Are Staying */}
               <div className="space-y-6 pt-6 border-t border-amber-500/10">
                 <div className="flex items-center gap-2 text-amber-300 mb-4">
-                  <ChefHat className="w-5 h-5" />
-                  <span className="font-body font-semibold">{t.form.mealDetails}</span>
+                  <House className="w-5 h-5" />
+                  <span className="font-body font-semibold">{t.form.stayDetails}</span>
                 </div>
 
-                {/* Meal Type Selection */}
                 <div>
-                  <label className="block text-amber-200/80 text-sm font-medium mb-3">
-                    {t.form.mealType}
+                  <label htmlFor="address" className={labelClass}>
+                    {t.form.address}
                   </label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      type="button"
-                      onClick={() => handleInputChange('mealType', 'iftar')}
-                      className={`p-6 rounded-2xl border-2 transition-all duration-300 ${
-                        formData.mealType === 'iftar'
-                          ? 'border-amber-400 bg-amber-500/20'
-                          : 'border-amber-500/20 bg-slate-800/30 hover:border-amber-500/40'
-                      }`}
-                    >
-                      <div className="text-center">
-                        <div className="text-3xl mb-2">🌙</div>
-                        <p className="font-display text-xl font-semibold text-white">
-                          {t.meals.iftar}
-                        </p>
-                        <p className="text-sm text-slate-400 mt-1">
-                          {t.form.iftarDescription}
-                        </p>
-                        <p className="text-xs text-amber-400 mt-2" dir="ltr">
-                          ~{formatTime(...MEAL_TIMES.iftar)}
-                        </p>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleInputChange('mealType', 'suhoor')}
-                      className={`p-6 rounded-2xl border-2 transition-all duration-300 ${
-                        formData.mealType === 'suhoor'
-                          ? 'border-amber-400 bg-amber-500/20'
-                          : 'border-amber-500/20 bg-slate-800/30 hover:border-amber-500/40'
-                      }`}
-                    >
-                      <div className="text-center">
-                        <div className="text-3xl mb-2">⭐</div>
-                        <p className="font-display text-xl font-semibold text-white">
-                          {t.meals.suhoor}
-                        </p>
-                        <p className="text-sm text-slate-400 mt-1">{t.form.suhoorDescription}</p>
-                        <p className="text-xs text-amber-400 mt-2" dir="ltr">
-                          ~{formatTime(...MEAL_TIMES.suhoor)}
-                        </p>
-                      </div>
-                    </button>
+                  <div className="relative">
+                    <MapPin className="absolute start-4 top-4 w-5 h-5 text-amber-400/50" />
+                    <textarea
+                      id="address"
+                      required
+                      rows={3}
+                      autoComplete="street-address"
+                      value={formData.address}
+                      onChange={(e) => handleInputChange('address', e.target.value)}
+                      placeholder={t.form.addressPlaceholder}
+                      className="input-field ps-12 resize-y"
+                    />
                   </div>
                 </div>
 
-                {/* Multi-Date Picker */}
+                <div>
+                  <label htmlFor="masjidName" className={labelClass}>
+                    {t.form.masjid}
+                  </label>
+                  <div className="relative">
+                    <Landmark className={iconClass} />
+                    <input
+                      id="masjidName"
+                      type="text"
+                      required
+                      aria-describedby="masjidHint"
+                      value={formData.masjidName}
+                      onChange={(e) => handleInputChange('masjidName', e.target.value)}
+                      placeholder={t.form.masjidPlaceholder}
+                      className="input-field ps-12"
+                    />
+                  </div>
+                  <p id="masjidHint" className="flex items-center gap-2 text-amber-400/70 text-xs mt-2">
+                    <Info className="w-4 h-4 flex-shrink-0" />
+                    {t.form.masjidHint}
+                  </p>
+                </div>
+              </div>
+
+              {/* Sehri Dates */}
+              <div className="space-y-6 pt-6 border-t border-amber-500/10">
+                <div className="flex items-center gap-2 text-amber-300 mb-4">
+                  <Moon className="w-5 h-5" />
+                  <span className="font-body font-semibold">{t.form.sehriDetails}</span>
+                </div>
+
+                <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-sm text-amber-100/90">
+                  <Clock className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <span>{t.form.sehriInfo}</span>
+                </div>
+
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <Info className="w-4 h-4 text-amber-400/70" />
@@ -362,41 +385,6 @@ export function RegistrationForm() {
                     onChange={(dates) => handleInputChange('dates', dates)}
                   />
                 </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-amber-200/80 text-sm font-medium mb-2">
-                      {t.form.guests}
-                    </label>
-                    <div className="relative">
-                      <Users className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400/50" />
-                      <select
-                        value={formData.guestCount}
-                        onChange={(e) => handleInputChange('guestCount', e.target.value)}
-                        className="input-field ps-12 appearance-none cursor-pointer"
-                      >
-                        {[1, 2, 3, 4, 5].map((num) => (
-                          <option key={num} value={num} className="bg-slate-900">
-                            {t.form.guestOption(num)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-amber-200/80 text-sm font-medium mb-2">
-                      {t.form.dietary}
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.dietaryNotes}
-                      onChange={(e) => handleInputChange('dietaryNotes', e.target.value)}
-                      placeholder={t.form.dietaryPlaceholder}
-                      className="input-field"
-                    />
-                  </div>
-                </div>
               </div>
 
               {/* All Dates Duplicate Warning */}
@@ -408,8 +396,7 @@ export function RegistrationForm() {
                       {t.form.duplicateTitle}
                     </p>
                     <p className="text-amber-300/90 text-sm mb-2">
-                      {submitResult.duplicateType === 'name' ? t.form.duplicateByName : t.form.duplicateByPhone}{' '}
-                      <strong>{mealLabel(submitResult.mealType)}</strong> {t.form.duplicateSuffix}
+                      {submitResult.duplicateType === 'name' ? t.form.duplicateByName : t.form.duplicateByPhone}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {submitResult.duplicateDates?.map((date, i) => (
@@ -452,6 +439,13 @@ export function RegistrationForm() {
                     </>
                   )}
                 </button>
+                <p className="text-center text-xs text-slate-500 mt-4">
+                  {t.form.privacyNote}{' '}
+                  <Link href="/privacy" className="text-amber-300/80 underline underline-offset-2 hover:text-amber-200">
+                    {t.form.privacyLink}
+                  </Link>
+                  {t.form.privacySuffix}
+                </p>
               </div>
             </form>
           )}

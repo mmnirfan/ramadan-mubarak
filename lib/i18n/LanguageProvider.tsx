@@ -55,6 +55,8 @@ interface LanguageContextValue {
   formatDate: (date: Date) => string
   formatDateKey: (dateKey: string) => string
   formatMonth: (date: Date) => string
+  formatDayMonth: (date: Date) => string
+  formatWeekday: (date: Date) => string
   formatTime: (hours: number, minutes: number) => string
 }
 
@@ -77,6 +79,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       year: 'numeric',
     })
     const monthFormat = new Intl.DateTimeFormat(intlLocale, { month: 'long', year: 'numeric' })
+    const dayMonthFormat = new Intl.DateTimeFormat(intlLocale, { day: 'numeric', month: 'short' })
+    const weekdayFormat = new Intl.DateTimeFormat(intlLocale, { weekday: 'short' })
     const timeFormat = new Intl.DateTimeFormat(intlLocale, { hour: 'numeric', minute: '2-digit' })
 
     const formatDate = (date: Date) => dateFormat.format(date)
@@ -93,6 +97,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         return date ? formatDate(date) : dateKey
       },
       formatMonth: (date: Date) => monthFormat.format(date),
+      formatDayMonth: (date: Date) => dayMonthFormat.format(date),
+      formatWeekday: (date: Date) => weekdayFormat.format(date),
       formatTime: (hours: number, minutes: number) =>
         timeFormat.format(new Date(2027, 1, 1, hours, minutes)),
     }

@@ -2,12 +2,12 @@
 
 import {
   BookOpen,
+  Users,
+  CalendarCheck,
   Clock,
-  Utensils,
-  Coffee,
-  HandHeart,
   Landmark,
-  Gift,
+  RefreshCw,
+  Share2,
   LucideIcon,
 } from 'lucide-react'
 import { InfoCard } from './ui'
@@ -16,12 +16,12 @@ import { useLanguage, Dictionary } from '@/lib/i18n'
 type GuidelineKey = keyof Dictionary['guidelines']['items']
 
 const GUIDELINE_ICONS: Record<GuidelineKey, LucideIcon> = {
-  hours: Clock,
-  etiquette: Utensils,
-  iftar: Coffee,
-  considerate: HandHeart,
-  prayer: Landmark,
-  charity: Gift,
+  who: Users,
+  register: CalendarCheck,
+  timing: Clock,
+  masjid: Landmark,
+  changes: RefreshCw,
+  share: Share2,
 }
 
 export function GuidelinesSection() {
