@@ -2,7 +2,7 @@
 /// <reference lib="webworker" />
 import { defaultCache } from '@serwist/turbopack/worker'
 import type { PrecacheEntry, SerwistGlobalConfig } from 'serwist'
-import { Serwist } from 'serwist'
+import { NetworkOnly, Serwist } from 'serwist'
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -17,7 +17,15 @@ const serwist = new Serwist({
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: defaultCache,
+  runtimeCaching: [
+    // Never cache personal data: admin pages, sign-in and API responses always go to the network
+    {
+      matcher: ({ url, sameOrigin }) =>
+        sameOrigin && (url.pathname.startsWith('/api/') || url.pathname.startsWith('/admin') || url.pathname.startsWith('/signin')),
+      handler: new NetworkOnly(),
+    },
+    ...defaultCache,
+  ],
   // When offline and the page isn't cached, show the offline page
   fallbacks: {
     entries: [

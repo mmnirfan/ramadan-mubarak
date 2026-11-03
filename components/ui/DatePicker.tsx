@@ -113,9 +113,10 @@ export function DatePicker({ values, onChange, label }: DatePickerProps) {
         </div>
       )}
 
-      {/* Calendar Dropdown */}
+      {/* Calendar - inline (not a floating dropdown), so it pushes the content below
+          down instead of being covered by the next section or overflowing its card */}
       {isOpen && (
-        <div className="absolute z-50 mt-2 w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-2xl shadow-2xl shadow-amber-500/10 p-4 animate-fade-in">
+        <div className="mt-3 w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-2xl shadow-2xl shadow-amber-500/10 p-4 animate-fade-in">
           <div className="flex items-center justify-between mb-4">
             <button
               type="button"

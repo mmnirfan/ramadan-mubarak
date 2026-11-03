@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, ReactNode, useContext, useEffect, useMemo, useSyncExternalStore } from 'react'
+import { usePathname } from 'next/navigation'
 import { Dictionary, Locale, translations } from './translations'
 import { fromDateKey } from '@/lib/utils'
 
@@ -62,8 +63,14 @@ interface LanguageContextValue {
 
 const LanguageContext = createContext<LanguageContextValue | null>(null)
 
+// The admin area is for organisers and is always shown in English
+const ENGLISH_ONLY_PATHS = ['/admin', '/signin']
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const locale = useSyncExternalStore(subscribe, readLocale, () => 'en' as Locale)
+  const pathname = usePathname()
+  const savedLocale = useSyncExternalStore(subscribe, readLocale, () => 'en' as Locale)
+  const englishOnly = ENGLISH_ONLY_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))
+  const locale: Locale = englishOnly ? 'en' : savedLocale
   const dir = locale === 'ur' ? 'rtl' : 'ltr'
 
   useEffect(() => {

@@ -2,7 +2,7 @@
   "id": "/",
   "name": "RamadanHub - Sehri Registration, Hoskote",
   "short_name": "RamadanHub",
-  "description": "Register or cancel Sehri during Ramadan 2027 if you stay in a PG, hostel or room in Hoskote, Bengaluru Rural. Includes the daily Sehri and Iftar timetable.",
+  "description": "Register or cancel Sehri during Ramadan 2027 if you stay in a PG, hostel or room in Hoskote, Bengaluru. Includes the daily Sehri and Iftar timetable.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",

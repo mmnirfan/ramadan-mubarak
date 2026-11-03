@@ -13,7 +13,7 @@ const en = {
   },
 
   header: {
-    location: 'Hoskote, Bengaluru Rural',
+    location: 'Hoskote, Bengaluru',
   },
 
   hero: {
@@ -21,9 +21,9 @@ const en = {
     titleLine2: 'Registration',
     intro:
       "For brothers and sisters staying in PGs, hostels or rented rooms in Hoskote who can't prepare Sehri themselves. Register the days you need Sehri during Ramadan 2027.",
-    prayerTimesTitle: 'Prayer Times - Hoskote',
+    prayerTimesTitle: 'Prayer Times - Bengaluru',
     prayerTimesNote:
-      'Approximate times for mid-Ramadan (24 Feb 2027), Asr per the Hanafi method. They shift by a few minutes over the month - follow your local masjid.',
+      'Approximate times for mid-Ramadan (24 Feb 2027) for Bengaluru city - Fajr is for Hoskote. Asr per the Hanafi method. Times shift by a few minutes over the month - follow your local masjid.',
   },
 
   prayers: {
@@ -42,7 +42,7 @@ const en = {
   timetable: {
     badge: 'Sehri & Iftar Timings',
     title: 'Ramadan 2027 Timetable',
-    subtitle: 'Hoskote, Bengaluru Rural - Sehri ends 5 minutes before the Fajr azan',
+    subtitle: 'Sehri & Fajr azan for Hoskote, Iftar for Bengaluru city - Sehri ends 5 minutes before the azan',
     roza: 'Roza',
     date: 'Date',
     day: 'Day',
@@ -52,7 +52,7 @@ const en = {
     morning: 'AM',
     evening: 'PM',
     fridayLegend: "Friday (Jumu'ah)",
-    note: '* Calculated for Hoskote / Bengaluru and matched to the local Bangalore Rural District masjid timetable (within about 1 minute). Roza numbers assume Ramadan starts on 9 Feb - if it starts a day later, follow the times by date.',
+    note: '* Sehri and Fajr azan are calculated for Hoskote, Iftar for Bengaluru city, using the same method as the local masjid timetable (within about 1 minute). Roza numbers assume Ramadan starts on 9 Feb - if it starts a day later, follow the times by date.',
   },
 
   form: {
@@ -81,7 +81,7 @@ const en = {
     masjidPlaceholder: 'Name of the masjid nearest to where you stay',
     masjidHint: 'Enter the masjid closest to your PG / hostel / room',
     sehriDetails: 'Sehri Dates',
-    sehriInfo: 'Sehri ends around 5:16 – 5:27 AM during Ramadan - see the timetable above for each day.',
+    sehriInfo: 'In Hoskote, Sehri ends around 5:15 – 5:27 AM during Ramadan - see the timetable above for each day.',
     multiDateHint: 'You can select multiple dates',
     datesLabel: 'Select Dates *',
     duplicateTitle: 'Already Registered!',
@@ -249,7 +249,7 @@ const en = {
       timing: {
         title: 'Sehri Timing',
         before: 'Please be ready ',
-        strong: 'before Sehri ends (about 5:16 – 5:27 AM)',
+        strong: 'before Sehri ends (about 5:15 – 5:27 AM)',
         after: ' - check the timetable for the exact time each day.',
       },
       masjid: {
@@ -316,7 +316,7 @@ const en = {
 
   footer: {
     tagline: 'Serving Sehri to those staying away from home in Hoskote during the holy month of Ramadan.',
-    copyright: '© 2027 RamadanHub - Hoskote, Bengaluru Rural',
+    copyright: '© 2027 RamadanHub - Hoskote, Bengaluru',
     home: 'Home',
     privacy: 'Privacy Policy',
   },
@@ -399,7 +399,7 @@ const ur: Dictionary = {
   },
 
   header: {
-    location: 'ہوسکوٹے، بنگلورو دیہی',
+    location: 'ہوسکوٹے، بنگلورو',
   },
 
   hero: {
@@ -407,9 +407,9 @@ const ur: Dictionary = {
     titleLine2: 'رجسٹریشن',
     intro:
       'ہوسکوٹے میں پی جی، ہاسٹل یا کرائے کے کمروں میں مقیم اُن بھائیوں اور بہنوں کے لیے جو خود سحری کا انتظام نہیں کر سکتے۔ رمضان 2027 میں جن دنوں سحری درکار ہو، ان کے لیے رجسٹر کریں۔',
-    prayerTimesTitle: 'اوقاتِ نماز - ہوسکوٹے',
+    prayerTimesTitle: 'اوقاتِ نماز - بنگلورو',
     prayerTimesNote:
-      'وسطِ رمضان (24 فروری 2027) کے تقریبی اوقات، عصر حنفی طریقے کے مطابق۔ مہینے بھر میں چند منٹ کا فرق آتا ہے، اپنی مقامی مسجد کے اوقات کی پیروی کریں۔',
+      'وسطِ رمضان (24 فروری 2027) کے لیے بنگلورو شہر کے تقریبی اوقات، فجر ہوسکوٹے کے مطابق۔ عصر حنفی طریقے کے مطابق۔ مہینے بھر میں چند منٹ کا فرق آتا ہے، اپنی مقامی مسجد کے اوقات کی پیروی کریں۔',
   },
 
   prayers: {
@@ -428,7 +428,7 @@ const ur: Dictionary = {
   timetable: {
     badge: 'سحری و افطار کے اوقات',
     title: 'اوقاتِ سحری و افطار رمضان المبارک 2027',
-    subtitle: 'ہوسکوٹے، بنگلورو دیہی - سحری اذانِ فجر سے 5 منٹ پہلے ختم',
+    subtitle: 'سحری و اذانِ فجر ہوسکوٹے کے مطابق، افطار بنگلورو شہر کے مطابق - سحری اذان سے 5 منٹ پہلے ختم',
     roza: 'روزہ',
     date: 'تاریخ',
     day: 'دن',
@@ -438,7 +438,7 @@ const ur: Dictionary = {
     morning: 'صبح',
     evening: 'شام',
     fridayLegend: 'جمعہ',
-    note: '* ہوسکوٹے / بنگلورو کے لیے حساب شدہ اور بنگلورو دیہی ضلع کی مقامی مسجد کے نظام الاوقات کے مطابق (تقریباً ایک منٹ کے فرق کے ساتھ)۔ روزوں کی گنتی 9 فروری سے آغازِ رمضان پر مبنی ہے، اگر رمضان ایک دن بعد شروع ہو تو تاریخ کے مطابق اوقات دیکھیں۔',
+    note: '* سحری اور اذانِ فجر ہوسکوٹے کے لیے، اور افطار بنگلورو شہر کے لیے، مقامی مسجد کے نظام الاوقات کے طریقے سے حساب شدہ (تقریباً ایک منٹ کے فرق کے ساتھ)۔ روزوں کی گنتی 9 فروری سے آغازِ رمضان پر مبنی ہے، اگر رمضان ایک دن بعد شروع ہو تو تاریخ کے مطابق اوقات دیکھیں۔',
   },
 
   form: {
@@ -467,7 +467,7 @@ const ur: Dictionary = {
     masjidPlaceholder: 'آپ کی رہائش کے قریب ترین مسجد کا نام',
     masjidHint: 'اپنے پی جی / ہاسٹل / کمرے کے سب سے قریب والی مسجد کا نام درج کریں',
     sehriDetails: 'سحری کی تاریخیں',
-    sehriInfo: 'رمضان میں سحری تقریباً صبح 5:16 تا 5:27 بجے ختم ہوتی ہے، ہر دن کا وقت اوپر دیے گئے نظام الاوقات میں دیکھیں۔',
+    sehriInfo: 'ہوسکوٹے میں رمضان کے دوران سحری تقریباً صبح 5:15 تا 5:27 بجے ختم ہوتی ہے، ہر دن کا وقت اوپر دیے گئے نظام الاوقات میں دیکھیں۔',
     multiDateHint: 'آپ کئی تاریخیں منتخب کر سکتے ہیں',
     datesLabel: 'تاریخیں منتخب کریں *',
     duplicateTitle: 'پہلے سے رجسٹرڈ!',
@@ -635,7 +635,7 @@ const ur: Dictionary = {
       timing: {
         title: 'سحری کا وقت',
         before: 'براہِ کرم ',
-        strong: 'سحری ختم ہونے سے پہلے (تقریباً صبح 5:16 تا 5:27)',
+        strong: 'سحری ختم ہونے سے پہلے (تقریباً صبح 5:15 تا 5:27)',
         after: ' تیار رہیں، ہر دن کا درست وقت نظام الاوقات میں دیکھیں۔',
       },
       masjid: {
@@ -702,7 +702,7 @@ const ur: Dictionary = {
 
   footer: {
     tagline: 'رمضان المبارک میں ہوسکوٹے میں گھر سے دور مقیم افراد کو سحری پہنچاتے ہوئے۔',
-    copyright: '© 2027 RamadanHub - ہوسکوٹے، بنگلورو دیہی',
+    copyright: '© 2027 RamadanHub - ہوسکوٹے، بنگلورو',
     home: 'ہوم پیج',
     privacy: 'رازداری کی پالیسی',
   },

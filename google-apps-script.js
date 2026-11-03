@@ -21,6 +21,11 @@
  * 5. Deploy as Web App (Execute as: Me, Access: Anyone)
  * 6. Copy Web App URL to your .env.local file
  *    (NEXT_PUBLIC_GOOGLE_SCRIPT_URL=...)
+ * 7. Admin dashboard: Project Settings → Script Properties → add
+ *    ADMIN_KEY = a long random value (at least 32 characters). Put the
+ *    same value in the website's ADMIN_API_KEY environment variable.
+ *    Removing a person sends them an email, so Google will ask you to
+ *    authorize "Send email as you" when you deploy.
  *
  * The header row is created automatically on an empty sheet.
  * After editing this file, create a NEW deployment version
@@ -64,9 +69,13 @@ const HEADERS = [
 
 // 0-based column indexes, must match HEADERS
 const COL = {
+  TIMESTAMP: 0,
   NAME: 1,
   PHONE: 2,
   EMAIL: 3,
+  OCCUPATION: 4,
+  ADDRESS: 5,
+  MASJID: 6,
   MEAL_TYPE: 7,
   DATE_KEY: 9,
   STATUS: 10,
@@ -74,10 +83,15 @@ const COL = {
   CANCEL_REASON: 12
 };
 
-// Cancelled bookings are kept (marked, not deleted) so organisers keep a record
+// Cancelled / removed bookings are kept (marked, not deleted) so organisers keep a record
 const STATUS_ACTIVE = 'Active';
 const STATUS_CANCELLED = 'Cancelled';
+const STATUS_REMOVED = 'Removed';
 const REASON_MAX_LENGTH = 300;
+
+function isInactive(row) {
+  return row[COL.STATUS] === STATUS_CANCELLED || row[COL.STATUS] === STATUS_REMOVED;
+}
 
 // ============================================
 // MAIN HANDLERS
@@ -91,6 +105,13 @@ function doPost(e) {
 
     if (data.action === 'cancel') {
       return cancelRegistrations(data, lock);
+    }
+
+    if (data.action === 'admin.list' || data.action === 'admin.remove') {
+      if (!isAdminRequest(data)) {
+        return createJsonResponse({ success: false, error: 'Not authorized' });
+      }
+      return data.action === 'admin.list' ? adminList() : adminRemove(data, lock);
     }
 
     const dates = validateData(data);
@@ -259,8 +280,8 @@ function findRegistrations(sheet, phone, name) {
   const results = [];
 
   values.forEach(row => {
-    // A cancelled booking doesn't block registering for that date again
-    if (row[COL.STATUS] === STATUS_CANCELLED) return;
+    // A cancelled or removed booking doesn't block registering for that date again
+    if (isInactive(row)) return;
 
     let matchedBy = null;
     if (phoneKey && normalizePhone(row[COL.PHONE]) === phoneKey) {
@@ -314,7 +335,7 @@ function cancelRegistrations(data, lock) {
   const cancelled = new Set();
 
   values.forEach((row, i) => {
-    if (row[COL.STATUS] === STATUS_CANCELLED) return;
+    if (isInactive(row)) return;
     const dateKey = toDateKey(row[COL.DATE_KEY]);
     if (!dates.includes(dateKey)) return;
 
@@ -349,6 +370,119 @@ function cancelRegistrations(data, lock) {
     notFoundDates: notFoundDates,
     message: `Cancelled Sehri on ${cancelledDates.length} date(s)`
   });
+}
+
+// ============================================
+// ADMIN (called only by the website's server, with the admin key)
+// ============================================
+
+function isAdminRequest(data) {
+  const expected = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  return Boolean(expected) && expected.length >= 32 && data.key === expected;
+}
+
+function toIso(value) {
+  return value instanceof Date ? value.toISOString() : String(value || '');
+}
+
+/**
+ * All bookings (every status) for the admin dashboard.
+ */
+function adminList() {
+  const sheet = getSheet();
+  const lastRow = sheet.getLastRow();
+  const values = lastRow < 2 ? [] : sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getValues();
+
+  const registrations = values
+    .map((row, i) => ({
+      row: i + 2,
+      timestamp: toIso(row[COL.TIMESTAMP]),
+      fullName: String(row[COL.NAME] || ''),
+      phone: String(row[COL.PHONE] || ''),
+      email: String(row[COL.EMAIL] || ''),
+      occupation: String(row[COL.OCCUPATION] || ''),
+      address: String(row[COL.ADDRESS] || ''),
+      masjidName: String(row[COL.MASJID] || ''),
+      date: toDateKey(row[COL.DATE_KEY]),
+      status: row[COL.STATUS] || STATUS_ACTIVE,
+      statusChangedAt: toIso(row[COL.CANCELLED_AT]),
+      reason: String(row[COL.CANCEL_REASON] || '')
+    }))
+    .filter(r => r.fullName || r.phone);
+
+  return createJsonResponse({ success: true, registrations: registrations });
+}
+
+/**
+ * Marks one booking as removed and emails the person (if they gave an email).
+ * The row is identified by number, and must still hold the same phone + date,
+ * so a row that moved (e.g. after manual edits in the sheet) is never removed by mistake.
+ */
+function adminRemove(data, lock) {
+  const rowNumber = Number(data.row);
+  const sheet = getSheet();
+
+  if (!Number.isInteger(rowNumber) || rowNumber < 2 || rowNumber > sheet.getLastRow()) {
+    return createJsonResponse({ success: false, error: 'Booking not found - refresh and try again' });
+  }
+
+  lock.waitLock(20000);
+
+  const range = sheet.getRange(rowNumber, 1, 1, HEADERS.length);
+  const row = range.getValues()[0];
+
+  const samePerson = normalizePhone(row[COL.PHONE]) === normalizePhone(data.phone) &&
+    toDateKey(row[COL.DATE_KEY]) === String(data.date);
+  if (!samePerson) {
+    lock.releaseLock();
+    return createJsonResponse({ success: false, error: 'This booking has changed - refresh and try again' });
+  }
+  if (isInactive(row)) {
+    lock.releaseLock();
+    return createJsonResponse({ success: false, error: `This booking is already ${String(row[COL.STATUS]).toLowerCase()}` });
+  }
+
+  const removedBy = sanitize(String(data.removedBy || 'admin').slice(0, 60));
+  sheet.getRange(rowNumber, COL.STATUS + 1, 1, 3)
+    .setValues([[STATUS_REMOVED, new Date(), `Removed by admin (${removedBy})`]]);
+  SpreadsheetApp.flush();
+  lock.releaseLock();
+
+  const emailed = sendRemovalEmail(row);
+  console.log(`Admin ${removedBy} removed row ${rowNumber} (${row[COL.DATE_KEY]}), emailed: ${emailed}`);
+  return createJsonResponse({ success: true, emailed: emailed });
+}
+
+/**
+ * Tells the person their booking was removed. Returns true if an email was sent.
+ */
+function sendRemovalEmail(row) {
+  const email = normalizeEmail(row[COL.EMAIL]).replace(/^'/, '');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return false;
+
+  const name = String(row[COL.NAME] || '').replace(/^'/, '');
+  const date = formatDateKey(toDateKey(row[COL.DATE_KEY]));
+  const masjid = String(row[COL.MASJID] || '').replace(/^'/, '');
+
+  const subject = 'RamadanHub: Your Sehri registration has been removed';
+  const body = `
+Assalamu Alaikum ${name},
+
+Your Sehri registration for ${date}${masjid ? ` (nearest masjid: ${masjid})` : ''} has been removed from the list by the RamadanHub organisers.
+
+If you think this is a mistake, or you still need Sehri on this date, please contact us at ${ADMIN_EMAIL} or register again on the website.
+
+Jazak Allah Khair,
+RamadanHub Team - Hoskote
+  `;
+
+  try {
+    MailApp.sendEmail(email, subject, body);
+    return true;
+  } catch (error) {
+    console.error(`Removal email failed: ${error}`);
+    return false;
+  }
 }
 
 // ============================================
@@ -482,7 +616,7 @@ DETAILS:
 - Dates: ${formattedDates.join('; ')}
 - Staying at: ${data.address}
 - Nearest masjid: ${data.masjidName}
-- Sehri ends: around 5:16 - 5:27 AM (see the timetable for each day)
+- Sehri ends (Hoskote): around 5:15 - 5:27 AM (see the timetable for each day)
 
 Jazak Allah Khair!
 

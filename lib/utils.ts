@@ -57,11 +57,12 @@ export function getFirstDayOfMonth(year: number, month: number): number {
 }
 
 /**
- * Prayer times for Hoskote / Bengaluru as [hours, minutes] (24h), Asr per Hanafi method,
+ * Prayer times as [hours, minutes] (24h) for Bengaluru city - except Fajr, which is
+ * for Hoskote (same as the Sehri timetable). Asr per Hanafi method,
  * approximate for mid-Ramadan 2027 (Feb 24)
  */
 export const PRAYER_TIMES = {
-  fajr: [5, 28],
+  fajr: [5, 27], // Hoskote
   sunrise: [6, 38],
   dhuhr: [12, 35],
   asr: [16, 49],

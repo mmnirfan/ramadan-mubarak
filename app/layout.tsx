@@ -6,7 +6,7 @@ import { LanguageProvider } from "@/lib/i18n";
 const SITE_URL = 'https://ramadan-mubarak-delta.vercel.app'
 const TITLE = 'RamadanHub | Sehri Registration - Hoskote'
 const DESCRIPTION =
-  'Register or cancel Sehri during Ramadan 2027 if you stay in a PG, hostel or room in Hoskote, Bengaluru Rural and cannot prepare Sehri yourself. Includes the daily Sehri and Iftar timetable.'
+  'Register or cancel Sehri during Ramadan 2027 if you stay in a PG, hostel or room in Hoskote, Bengaluru and cannot prepare Sehri yourself. Includes the daily Sehri and Iftar timetable.'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   keywords: [
     'Ramadan 2027', 'Sehri', 'Sehri registration', 'Suhoor', 'Sehri timetable', 'Iftar time',
-    'Hoskote', 'Bengaluru Rural', 'Bangalore', 'PG', 'Hostel', 'Fasting', 'Roza', 'Masjid',
+    'Hoskote', 'Bengaluru', 'Bangalore', 'PG', 'Hostel', 'Fasting', 'Roza', 'Masjid',
     'سحری', 'رمضان', 'ہوسکوٹے',
   ],
   authors: [{ name: 'RamadanHub Hoskote' }],
