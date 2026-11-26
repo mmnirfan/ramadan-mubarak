@@ -3,7 +3,7 @@
 import { Star } from 'lucide-react'
 import { ImportantDate } from '@/lib/types'
 
-interface DateCardProps extends ImportantDate {}
+type DateCardProps = ImportantDate
 
 export function DateCard({
   date,
@@ -25,7 +25,7 @@ export function DateCard({
       }`}
     >
       {isHighlight && (
-        <div className="absolute -top-2 -right-2">
+        <div className="absolute -top-2 -end-2">
           <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
         </div>
       )}
@@ -34,7 +34,7 @@ export function DateCard({
           <p className="text-2xl font-bold text-amber-300">{dayNumber}</p>
           <p className="text-xs text-slate-400">{monthPart}</p>
         </div>
-        <div className="flex-1 border-l border-amber-500/20 pl-4">
+        <div className="flex-1 border-s border-amber-500/20 ps-4">
           <p className="font-semibold text-white">{event}</p>
           <p className="text-xs text-amber-400/70 mt-0.5">{hijriDate}</p>
           {description && (
