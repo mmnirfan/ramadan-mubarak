@@ -1,11 +1,13 @@
 /**
- * Registration row as returned to the admin dashboard
+ * One booking (one person, one date) as returned to the admin dashboard.
+ * The sheet keeps one row per person; the script expands each row into
+ * one booking per date so the dashboard can count meals per day.
  */
 export type BookingStatus = 'Active' | 'Cancelled' | 'Removed'
 
 export interface AdminRegistration {
-  row: number           // sheet row number - used (with phone + date) to identify a booking
-  timestamp: string     // ISO
+  row: number           // sheet row number = the person; used (with phone) to identify them
+  timestamp: string     // ISO, when the person first registered
   fullName: string
   phone: string
   email: string
@@ -26,6 +28,7 @@ export interface AdminListResponse {
 
 export interface AdminRemoveResponse {
   success: boolean
-  emailed?: boolean     // whether the person was notified by email
+  emailed?: boolean       // whether the person was notified by email
+  removedDates?: string[] // yyyy-MM-dd - the dates that were actually removed
   error?: string
 }

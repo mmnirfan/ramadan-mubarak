@@ -1,5 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Amiri:wght@400;700&family=Noto+Nastaliq+Urdu:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
+/* Local handoff notes contain Windows paths like "\725d63..." that Tailwind misreads as CSS escapes */
+@source not "../handoff-*.md";
 
 /* The app is always dark - also visible when a phone over-scrolls past the content */
 :root {

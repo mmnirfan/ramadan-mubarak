@@ -36,7 +36,7 @@ export function RegistrationForm() {
     duplicateDates?: string[]
     partialDuplicate?: boolean
     isDuplicate?: boolean
-    duplicateType?: 'name' | 'phone'
+    duplicateType?: 'phone' | 'email'
   } | null>(null)
 
   const handleInputChange = (field: keyof RegistrationFormData, value: string | Date[]) => {
@@ -396,7 +396,7 @@ export function RegistrationForm() {
                       {t.form.duplicateTitle}
                     </p>
                     <p className="text-amber-300/90 text-sm mb-2">
-                      {submitResult.duplicateType === 'name' ? t.form.duplicateByName : t.form.duplicateByPhone}
+                      {submitResult.duplicateType === 'email' ? t.form.duplicateByEmail : t.form.duplicateByPhone}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {submitResult.duplicateDates?.map((date, i) => (

@@ -108,10 +108,10 @@ export async function submitRegistration(
 }
 
 /**
- * Fetch existing registrations from Google Sheets by mobile number or name
+ * Fetch existing registrations from Google Sheets by mobile number or email
  */
 export async function lookupRegistrations(
-  query: { phone?: string; name?: string }
+  query: { phone?: string; email?: string }
 ): Promise<LookupResponse> {
   if (!GOOGLE_SCRIPT_URL) {
     return { success: true, count: 0, registrations: [] }
@@ -120,7 +120,7 @@ export async function lookupRegistrations(
   try {
     const params = new URLSearchParams()
     if (query.phone?.trim()) params.set('phone', query.phone.trim())
-    if (query.name?.trim()) params.set('name', query.name.trim())
+    if (query.email?.trim()) params.set('email', query.email.trim())
 
     const response = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`)
     return await response.json()

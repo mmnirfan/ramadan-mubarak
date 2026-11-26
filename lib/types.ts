@@ -66,7 +66,7 @@ export interface ApiResponse {
 export interface RegistrationResponse extends ApiResponse {
   isDuplicate?: boolean
   partialDuplicate?: boolean
-  duplicateType?: 'name' | 'phone'
+  duplicateType?: 'phone' | 'email'
   mealType?: string
   savedDates?: string[]      // yyyy-MM-dd
   duplicateDates?: string[]  // yyyy-MM-dd

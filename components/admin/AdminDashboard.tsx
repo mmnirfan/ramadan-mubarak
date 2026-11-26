@@ -6,9 +6,9 @@ import Link from 'next/link'
 import { Toaster, toast } from 'sonner'
 import {
   CalendarClock, Users, UtensilsCrossed, XCircle, RefreshCw, LogOut, Search, Trash2, Landmark, Phone, Mail,
-  MapPin, Briefcase, Moon, AlertCircle, ExternalLink,
+  MapPin, Briefcase, Moon, AlertCircle, ExternalLink, X,
 } from 'lucide-react'
-import type { AdminRegistration, BookingStatus } from '@/lib/admin/types'
+import type { AdminRegistration, AdminRemoveResponse, BookingStatus } from '@/lib/admin/types'
 import { RAMADAN_TIMETABLE } from '@/lib/timetable'
 import { fromDateKey, toDateKey } from '@/lib/utils'
 
@@ -21,6 +21,12 @@ const dateLabel = new Intl.DateTimeFormat('en-IN', { weekday: 'short', day: 'num
 const dateTimeLabel = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: TIMEZONE })
 const formatKey = (key: string) => { const d = fromDateKey(key); return d ? dateLabel.format(d) : key }
 const formatIso = (iso: string) => { const d = new Date(iso); return iso && !Number.isNaN(d.getTime()) ? dateTimeLabel.format(d) : '' }
+// A sheet row holds one person with several dates, so a booking is row + date
+const bookingId = (r: { row: number; date: string }) => `${r.row}|${r.date}`
+const daysLabel = (n: number) => `${n} ${n === 1 ? 'day' : 'days'}`
+
+/** One person (one sheet row) with all of their bookings, sorted by date */
+type Person = Omit<AdminRegistration, 'date' | 'status' | 'statusChangedAt' | 'reason'> & { bookings: AdminRegistration[] }
 const normalizePhone = (phone: string) => { const digits = phone.replace(/\D/g, ''); return digits.length > 10 ? digits.slice(-10) : digits }
 const normalizeText = (text: string) => text.trim().replace(/\s+/g, ' ').toLowerCase()
 
@@ -55,7 +61,7 @@ export function AdminDashboard({ username }: { username: string }) {
   const [search, setSearch] = useState('')
   const [dateFilter, setDateFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState<BookingStatus | 'all'>('Active')
-  const [removing, setRemoving] = useState<Set<number>>(new Set())
+  const [removing, setRemoving] = useState<Set<string>>(new Set())
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -114,64 +120,86 @@ export function AdminDashboard({ username }: { username: string }) {
   }, [active])
   const maxPerDate = Math.max(1, ...perDate.map(([, n]) => n))
 
+  // ---------- People list (one entry per person = one sheet row) ----------
+  const people = useMemo(() => {
+    const byRow = new Map<number, Person>()
+    registrations.forEach((r) => {
+      const person = byRow.get(r.row) ?? { ...r, bookings: [] }
+      person.bookings.push(r)
+      byRow.set(r.row, person)
+    })
+    byRow.forEach((p) => p.bookings.sort((a, b) => a.date.localeCompare(b.date)))
+    return [...byRow.values()]
+  }, [registrations])
+
+  // A person is listed when they have a date with the chosen status (and on the
+  // chosen date); their chips show every date with that status.
   const filtered = useMemo(() => {
     const query = normalizeText(search)
     const digits = search.replace(/\D/g, '')
-    return registrations
-      .filter((r) => statusFilter === 'all' || r.status === statusFilter)
-      .filter((r) => dateFilter === 'all' || r.date === dateFilter)
-      .filter((r) => {
+    return people
+      .map((p) => ({ person: p, shown: p.bookings.filter((b) => statusFilter === 'all' || b.status === statusFilter) }))
+      .filter(({ shown }) => shown.length > 0 && (dateFilter === 'all' || shown.some((b) => b.date === dateFilter)))
+      .filter(({ person: p }) => {
         if (!query) return true
-        const text = normalizeText([r.fullName, r.email, r.masjidName, r.address, r.occupation].join(' '))
-        return text.includes(query) || (digits.length >= 3 && r.phone.replace(/\D/g, '').includes(digits))
+        const text = normalizeText([p.fullName, p.email, p.masjidName, p.address, p.occupation].join(' '))
+        return text.includes(query) || (digits.length >= 3 && p.phone.replace(/\D/g, '').includes(digits))
       })
-      .sort((a, b) => a.date.localeCompare(b.date) || a.fullName.localeCompare(b.fullName))
-  }, [registrations, search, dateFilter, statusFilter])
+      .sort((a, b) => a.person.fullName.localeCompare(b.person.fullName))
+  }, [people, search, dateFilter, statusFilter])
 
-  // ---------- Remove (confirmation toast, then result toast) ----------
-  const removeBooking = (booking: AdminRegistration) => {
-    setRemoving((prev) => new Set(prev).add(booking.row))
+  // ---------- Remove dates (confirmation toast, then result toast) ----------
+  const removeDates = (person: Person, dates: string[]) => {
+    const ids = dates.map((date) => bookingId({ row: person.row, date }))
+    setRemoving((prev) => new Set([...prev, ...ids]))
     const request = fetch('/api/admin/registrations/remove', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ row: booking.row, phone: booking.phone, date: booking.date }),
+      body: JSON.stringify({ row: person.row, phone: person.phone, dates }),
     }).then(async (response) => {
       if (response.status === 401) {
         router.replace('/signin?next=/admin')
         throw new Error('Your session expired - please sign in again')
       }
-      const result = await response.json().catch(() => ({}))
+      const result = (await response.json().catch(() => ({}))) as AdminRemoveResponse
       if (!result.success) throw new Error(result.error || 'Could not remove the booking')
-      return result as { emailed: boolean }
+      return result
     })
 
     toast.promise(request, {
-      loading: `Removing ${booking.fullName}...`,
-      success: (result) =>
-        result.emailed
-          ? `${booking.fullName} removed - email sent to ${booking.email}`
-          : `${booking.fullName} removed (no email on file, not notified)`,
+      loading: `Removing ${person.fullName}...`,
+      success: (result) => {
+        const what = `${person.fullName}: ${daysLabel(result.removedDates?.length ?? dates.length)} removed`
+        return result.emailed ? `${what} - email sent to ${person.email}` : `${what} (no email on file, not notified)`
+      },
       error: (error: Error) => error.message,
     })
 
     request
-      .then(() =>
+      .then((result) => {
+        const removed = new Set(result.removedDates ?? dates)
+        const now = new Date().toISOString()
         setRegistrations((prev) =>
-          prev.map((r) => (r.row === booking.row ? { ...r, status: 'Removed', statusChangedAt: new Date().toISOString(), reason: `Removed by admin (${username})` } : r))
+          prev.map((r) =>
+            r.row === person.row && r.status === 'Active' && removed.has(r.date)
+              ? { ...r, status: 'Removed', statusChangedAt: now, reason: `Removed by admin (${username})` }
+              : r
+          )
         )
-      )
+      })
       .catch(() => {})
-      .finally(() => setRemoving((prev) => { const next = new Set(prev); next.delete(booking.row); return next }))
+      .finally(() => setRemoving((prev) => { const next = new Set(prev); ids.forEach((id) => next.delete(id)); return next }))
   }
 
-  const confirmRemove = (booking: AdminRegistration) => {
-    toast.warning(`Remove ${booking.fullName}?`, {
-      id: `confirm-${booking.row}`,
-      description: `Sehri on ${formatKey(booking.date)}. ${
-        booking.email ? `An email will be sent to ${booking.email}.` : 'No email on file - they will not be notified.'
+  const confirmRemove = (person: Person, dates: string[]) => {
+    const all = dates.length > 1
+    toast.warning(all ? `Remove all of ${person.fullName}'s Sehri?` : `Remove ${person.fullName}'s Sehri?`, {
+      id: `confirm-${person.row}-${dates.join(',')}`,
+      description: `${all ? `${daysLabel(dates.length)}: ` : ''}${dates.map(formatKey).join(', ')}. ${
+        person.email ? `One email will be sent to ${person.email}.` : 'No email on file - they will not be notified.'
       }`,
       duration: 15000,
-      action: { label: 'Remove', onClick: () => removeBooking(booking) },
+      action: { label: 'Remove', onClick: () => removeDates(person, dates) },
       cancel: { label: 'Cancel', onClick: () => {} },
     })
   }
@@ -283,8 +311,13 @@ export function AdminDashboard({ username }: { username: string }) {
             <div className="flex-1">
               <h2 id="all-registrations" className="font-display text-lg font-semibold text-white">All registrations</h2>
               <p className="text-xs text-slate-400">
-                {filtered.length} shown of {registrations.length}
+                {filtered.length} of {people.length} {people.length === 1 ? 'person' : 'people'}
                 {lastLoaded && ` · updated ${dateTimeLabel.format(lastLoaded)}`}
+              </p>
+              <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-400" aria-label="Date colours">
+                <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-400" /> Active</span>
+                <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-slate-400" /> Cancelled</span>
+                <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-400" /> Removed</span>
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2">
@@ -331,37 +364,35 @@ export function AdminDashboard({ username }: { username: string }) {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-start text-xs uppercase tracking-wide text-amber-300/80 border-b border-amber-500/20">
-                      <th scope="col" className="py-2 pe-3 text-start font-semibold">Date</th>
                       <th scope="col" className="py-2 pe-3 text-start font-semibold">Name</th>
                       <th scope="col" className="py-2 pe-3 text-start font-semibold">Contact</th>
                       <th scope="col" className="py-2 pe-3 text-start font-semibold">Occupation</th>
                       <th scope="col" className="py-2 pe-3 text-start font-semibold">Address / Masjid</th>
-                      <th scope="col" className="py-2 pe-3 text-start font-semibold">Status</th>
+                      <th scope="col" className="py-2 pe-3 text-start font-semibold">Sehri dates</th>
                       <th scope="col" className="py-2 text-end font-semibold"><span className="sr-only">Actions</span></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((r) => (
-                      <tr key={r.row} className="border-b border-slate-800 align-top">
-                        <td className="py-3 pe-3 whitespace-nowrap text-slate-200">{formatKey(r.date)}</td>
+                    {filtered.map(({ person: p, shown }) => (
+                      <tr key={p.row} className="border-b border-slate-800 align-top">
                         <td className="py-3 pe-3">
-                          <p className="font-medium text-white">{r.fullName}</p>
-                          <p className="text-xs text-slate-500">Registered {formatIso(r.timestamp)}</p>
+                          <p className="font-medium text-white">{p.fullName}</p>
+                          <p className="text-xs text-slate-500">Registered {formatIso(p.timestamp)}</p>
                         </td>
                         <td className="py-3 pe-3">
-                          <p className="text-slate-200 whitespace-nowrap" dir="ltr">{r.phone}</p>
-                          {r.email && <p className="text-xs text-slate-400 break-all">{r.email}</p>}
+                          <p className="text-slate-200 whitespace-nowrap" dir="ltr">{p.phone}</p>
+                          {p.email && <p className="text-xs text-slate-400 break-all">{p.email}</p>}
                         </td>
-                        <td className="py-3 pe-3 text-slate-300">{r.occupation}</td>
-                        <td className="py-3 pe-3 max-w-xs">
-                          <p className="text-slate-300">{r.address}</p>
-                          <p className="text-xs text-amber-300/80 mt-0.5">{r.masjidName}</p>
+                        <td className="py-3 pe-3 text-slate-300">{p.occupation}</td>
+                        <td className="py-3 pe-3 max-w-[14rem]">
+                          <p className="text-slate-300">{p.address}</p>
+                          <p className="text-xs text-amber-300/80 mt-0.5">{p.masjidName}</p>
                         </td>
-                        <td className="py-3 pe-3">
-                          <StatusBadge registration={r} />
+                        <td className="py-3 pe-3 min-w-[16rem]">
+                          <DateChips person={p} shown={shown} highlight={dateFilter} removing={removing} onRemove={confirmRemove} />
                         </td>
                         <td className="py-3 text-end">
-                          <RemoveButton registration={r} busy={removing.has(r.row)} onRemove={confirmRemove} />
+                          <RemoveAllButton person={p} removing={removing} onRemove={confirmRemove} />
                         </td>
                       </tr>
                     ))}
@@ -371,27 +402,25 @@ export function AdminDashboard({ username }: { username: string }) {
 
               {/* Mobile / tablet cards */}
               <ul className="lg:hidden space-y-3">
-                {filtered.map((r) => (
-                  <li key={r.row} className="rounded-xl border border-slate-700/60 bg-slate-900/40 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-medium text-white">{r.fullName}</p>
-                        <p className="text-sm text-amber-200">{formatKey(r.date)}</p>
-                      </div>
-                      <StatusBadge registration={r} />
+                {filtered.map(({ person: p, shown }) => (
+                  <li key={p.row} className="rounded-xl border border-slate-700/60 bg-slate-900/40 p-4">
+                    <div className="min-w-0">
+                      <p className="font-medium text-white">{p.fullName}</p>
+                      <p className="text-xs text-slate-500">Registered {formatIso(p.timestamp)}</p>
                     </div>
                     <dl className="mt-3 space-y-1.5 text-sm">
-                      <Detail icon={Phone}><span dir="ltr">{r.phone}</span></Detail>
-                      {r.email && <Detail icon={Mail}><span className="break-all">{r.email}</span></Detail>}
-                      <Detail icon={Briefcase}>{r.occupation}</Detail>
-                      <Detail icon={MapPin}>{r.address}</Detail>
-                      <Detail icon={Landmark}>{r.masjidName}</Detail>
+                      <Detail icon={Phone}><span dir="ltr">{p.phone}</span></Detail>
+                      {p.email && <Detail icon={Mail}><span className="break-all">{p.email}</span></Detail>}
+                      <Detail icon={Briefcase}>{p.occupation}</Detail>
+                      <Detail icon={MapPin}>{p.address}</Detail>
+                      <Detail icon={Landmark}>{p.masjidName}</Detail>
                     </dl>
-                    {r.status === 'Active' && (
-                      <div className="mt-3 flex justify-end">
-                        <RemoveButton registration={r} busy={removing.has(r.row)} onRemove={confirmRemove} />
-                      </div>
-                    )}
+                    <div className="mt-3">
+                      <DateChips person={p} shown={shown} highlight={dateFilter} removing={removing} onRemove={confirmRemove} />
+                    </div>
+                    <div className="mt-3 flex justify-end empty:hidden">
+                      <RemoveAllButton person={p} removing={removing} onRemove={confirmRemove} />
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -415,31 +444,72 @@ function StatCard({ icon: Icon, label, value, hint, loading }: { icon: typeof Us
   )
 }
 
-function StatusBadge({ registration }: { registration: AdminRegistration }) {
+type RemoveHandler = (person: Person, dates: string[]) => void
+
+/**
+ * The person's dates as chips. Active dates have an × to remove just that date;
+ * cancelled / removed dates are struck through, with when and why on hover.
+ */
+function DateChips({ person, shown, highlight, removing, onRemove }: {
+  person: Person; shown: AdminRegistration[]; highlight: string; removing: Set<string>; onRemove: RemoveHandler
+}) {
+  const activeCount = person.bookings.filter((b) => b.status === 'Active').length
   return (
-    <div className="flex flex-col items-start gap-1">
-      <span className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[registration.status]}`}>
-        {registration.status}
-      </span>
-      {registration.status !== 'Active' && registration.statusChangedAt && (
-        <span className="text-[11px] text-slate-500" title={registration.reason}>{formatIso(registration.statusChangedAt)}</span>
-      )}
+    <div>
+      <ul className="flex flex-wrap gap-1.5">
+        {shown.map((b) => {
+          const busy = removing.has(bookingId(b))
+          const changed = b.status !== 'Active'
+            ? `${b.status}${b.statusChangedAt ? ` ${formatIso(b.statusChangedAt)}` : ''}${b.reason ? ` - ${b.reason}` : ''}`
+            : undefined
+          return (
+            <li
+              key={b.date}
+              title={changed}
+              className={`inline-flex items-center gap-1 rounded-full border ps-2.5 text-xs font-medium ${STATUS_STYLES[b.status]} ${
+                b.status === 'Active' ? 'pe-1' : 'pe-2.5 py-1 line-through decoration-1'
+              } ${b.date === highlight ? 'ring-2 ring-amber-400' : ''} ${busy ? 'opacity-50' : ''}`}
+            >
+              <span className="whitespace-nowrap">{formatKey(b.date)}</span>
+              {b.status === 'Active' && (
+                <button
+                  type="button"
+                  onClick={() => onRemove(person, [b.date])}
+                  disabled={busy}
+                  className="rounded-full p-1 text-emerald-200/80 hover:bg-rose-500/25 hover:text-rose-100 disabled:cursor-not-allowed"
+                  aria-label={`Remove ${person.fullName}'s Sehri on ${formatKey(b.date)}`}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+              {changed && <span className="sr-only">({changed})</span>}
+            </li>
+          )
+        })}
+      </ul>
+      <p className="mt-1.5 text-[11px] text-slate-500">
+        {daysLabel(activeCount)} active
+        {person.bookings.length > activeCount && ` · ${person.bookings.length - activeCount} cancelled / removed`}
+      </p>
     </div>
   )
 }
 
-function RemoveButton({ registration, busy, onRemove }: { registration: AdminRegistration; busy: boolean; onRemove: (r: AdminRegistration) => void }) {
-  if (registration.status !== 'Active') return null
+/** Removes every active date of the person (one email). */
+function RemoveAllButton({ person, removing, onRemove }: { person: Person; removing: Set<string>; onRemove: RemoveHandler }) {
+  const activeDates = person.bookings.filter((b) => b.status === 'Active').map((b) => b.date)
+  if (activeDates.length === 0) return null
+  const busy = activeDates.some((date) => removing.has(bookingId({ row: person.row, date })))
   return (
     <button
       type="button"
-      onClick={() => onRemove(registration)}
+      onClick={() => onRemove(person, activeDates)}
       disabled={busy}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-rose-400/40 px-3 py-2 text-sm text-rose-200 hover:bg-rose-500/15 disabled:opacity-50"
-      aria-label={`Remove ${registration.fullName} on ${formatKey(registration.date)}`}
+      className="inline-flex items-center gap-1.5 rounded-lg border border-rose-400/40 px-3 py-2 text-sm text-rose-200 hover:bg-rose-500/15 disabled:opacity-50 whitespace-nowrap"
+      aria-label={`Remove all ${activeDates.length} active Sehri dates of ${person.fullName}`}
     >
       <Trash2 className="w-4 h-4" />
-      Remove
+      {activeDates.length > 1 ? 'Remove all' : 'Remove'}
     </button>
   )
 }
